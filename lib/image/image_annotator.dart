@@ -1,17 +1,12 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:file_editor/text_annotation/text_annotation.dart';
+import 'package:file_editor/text_annotation/text_sticker.dart';
 import 'package:file_editor/permission_request_handler.dart';
 import 'package:file_editor/storage_directory_path.dart';
 import 'package:flutter/material.dart';
 
-class StrokeSegment {
-  final List<Offset?> points;
-  final Color color;
-  final double strokeWidth;
-
-  StrokeSegment(this.points, this.color, this.strokeWidth);
-}
+import '../pdf/pdf_annotator.dart';
 
 class ImageAnnotator extends StatefulWidget {
   final String? filePath;
@@ -23,9 +18,11 @@ class ImageAnnotator extends StatefulWidget {
 }
 
 class _ImageAnnotatorState extends State<ImageAnnotator> {
+  final GlobalKey _imageKey = GlobalKey();
   ui.Image? image;
   String? imagePath;
   final List<StrokeSegment> strokes = [];
+  final List<TextAnnotation> textAnnotations = [];
   List<Offset?> currentPoints = [];
   Color penColor = Colors.red;
   double strokeWidth = 3.0;
@@ -48,7 +45,8 @@ class _ImageAnnotatorState extends State<ImageAnnotator> {
       image = frame.image;
       imagePath = widget.filePath;
       strokes.clear();
-      currentPoints = [];
+      textAnnotations.clear();
+      currentPoints.clear();
     });
   }
 
@@ -60,16 +58,15 @@ class _ImageAnnotatorState extends State<ImageAnnotator> {
       recorder,
       Rect.fromLTWH(0, 0, image!.width.toDouble(), image!.height.toDouble()),
     );
-    final paint = Paint();
-    canvas.drawImage(image!, Offset.zero, paint);
+    canvas.drawImage(image!, Offset.zero, Paint());
 
+    // Draw strokes
     for (final stroke in strokes) {
       final paint =
           Paint()
             ..color = stroke.color
             ..strokeWidth = stroke.strokeWidth
             ..strokeCap = StrokeCap.round;
-
       for (int i = 0; i < stroke.points.length - 1; i++) {
         final p1 = stroke.points[i];
         final p2 = stroke.points[i + 1];
@@ -81,13 +78,56 @@ class _ImageAnnotatorState extends State<ImageAnnotator> {
       }
     }
 
-    final pic = recorder.endRecording();
-    final finalImage = await pic.toImage(image!.width, image!.height);
-    final byteData = await finalImage.toByteData(
-      format: ui.ImageByteFormat.png,
-    );
+    // Draw text
+    for (final text in textAnnotations) {
+      final painter = TextPainter(
+        text: TextSpan(
+          text: text.text,
+          style: TextStyle(
+            fontSize: text.fontSize * scaleFactorX,
+            color: text.color,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      painter.layout();
+      final scaledOffset = Offset(
+        text.position.dx * scaleFactorX,
+        text.position.dy * scaleFactorY,
+      );
+      painter.paint(canvas, scaledOffset);
+    }
+
+    final picture = recorder.endRecording();
+    final rendered = await picture.toImage(image!.width, image!.height);
+    final byteData = await rendered.toByteData(format: ui.ImageByteFormat.png);
     final pngBytes = byteData!.buffer.asUint8List();
-    saveImageFile(pngBytes);
+
+    await requestStoragePermission();
+    final path = await getExportPath(
+      '${DateTime.now().millisecondsSinceEpoch}.png',
+    );
+    final file = File(path);
+    await file.writeAsBytes(pngBytes);
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Saved to $path')));
+      Navigator.pop(context);
+    }
+  }
+
+  void _addTextAnnotation(String text) {
+    setState(() {
+      textAnnotations.add(
+        TextAnnotation(
+          text: text,
+          position: Offset(displayWidth / 2, displayHeight / 2),
+          fontSize: 20.0,
+          color: penColor,
+        ),
+      );
+    });
   }
 
   bool _isInsideImage(Offset point) {
@@ -97,61 +137,59 @@ class _ImageAnnotatorState extends State<ImageAnnotator> {
         point.dy <= displayHeight;
   }
 
-  Future<void> saveImageFile(Uint8List imageBytes) async {
-
-    await requestStoragePermission();
-    final path = await getExportPath(
-      '${DateTime.now().millisecondsSinceEpoch}.png',
-    );
-    final file = File(path);
-    await file.writeAsBytes(imageBytes as List<int>);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Image saved to $path')));
-    Navigator.pop(context);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Image Annotator'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              DropdownButton<Color>(
-                value: penColor,
-                onChanged: (Color? newColor) {
-                  if (newColor != null) {
-                    setState(() => penColor = newColor);
-                  }
-                },
-                items:
-                    [
-                          Colors.red,
-                          Colors.blue,
-                          Colors.green,
-                          Colors.black,
-                          Colors.yellow,
-                        ]
-                        .map(
-                          (color) => DropdownMenuItem(
-                            value: color,
-                            child: Container(
-                              width: 24,
-                              height: 24,
-                              color: color,
-                            ),
-                          ),
-                        )
-                        .toList(),
-              ),
-            ],
-          ),
-        ),
         actions: [
+          DropdownButton<Color>(
+            value: penColor,
+            onChanged: (Color? newColor) {
+              if (newColor != null) {
+                setState(() => penColor = newColor);
+              }
+            },
+            items:
+                [
+                      Colors.red,
+                      Colors.blue,
+                      Colors.green,
+                      Colors.black,
+                      Colors.yellow,
+                    ]
+                    .map(
+                      (color) => DropdownMenuItem(
+                        value: color,
+                        child: Container(width: 24, height: 24, color: color),
+                      ),
+                    )
+                    .toList(),
+          ),
+          IconButton(
+            icon: const Icon(Icons.text_fields),
+            onPressed: () async {
+              final controller = TextEditingController();
+              final result = await showDialog<String>(
+                context: context,
+                builder:
+                    (_) => AlertDialog(
+                      title: const Text('Enter Text'),
+                      content: TextField(controller: controller),
+                      actions: [
+                        TextButton(
+                          onPressed:
+                              () => Navigator.pop(context, controller.text),
+                          child: const Text('Add'),
+                        ),
+                      ],
+                    ),
+              );
+              if (result != null && result.trim().isNotEmpty) {
+                _addTextAnnotation(result.trim());
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.save),
             onPressed: _saveAnnotatedImage,
@@ -170,14 +208,12 @@ class _ImageAnnotatorState extends State<ImageAnnotator> {
 
                   return GestureDetector(
                     onPanUpdate: (details) {
-                      RenderBox box = context.findRenderObject() as RenderBox;
-                      Offset localPos = box.globalToLocal(
-                        details.globalPosition,
-                      );
-                      if (_isInsideImage(localPos)) {
-                        setState(() {
-                          currentPoints.add(localPos);
-                        });
+                      final box =
+                          _imageKey.currentContext!.findRenderObject()
+                              as RenderBox;
+                      Offset local = box.globalToLocal(details.globalPosition);
+                      if (_isInsideImage(local)) {
+                        setState(() => currentPoints.add(local));
                       }
                     },
                     onPanEnd: (_) {
@@ -196,6 +232,7 @@ class _ImageAnnotatorState extends State<ImageAnnotator> {
                       width: displayWidth,
                       height: displayHeight,
                       child: Stack(
+                        key: _imageKey,
                         children: [
                           Image.file(
                             File(imagePath!),
@@ -212,6 +249,24 @@ class _ImageAnnotatorState extends State<ImageAnnotator> {
                             ),
                             size: Size(displayWidth, displayHeight),
                           ),
+                          ...textAnnotations.map((annotation) {
+                            return TextSticker(
+                              key: ValueKey(annotation),
+                              text: annotation.text,
+                              color: annotation.color,
+                              initialFontSize: annotation.fontSize,
+                              initialPosition: annotation.position,
+                              onChanged: (pos, size) {
+                                annotation.position = pos;
+                                annotation.fontSize = size;
+                              },
+                              onDelete: () {
+                                setState(() {
+                                  textAnnotations.remove(annotation);
+                                });
+                              },
+                            );
+                          }),
                         ],
                       ),
                     ),
@@ -243,7 +298,6 @@ class _ImageDrawingPainter extends CustomPainter {
             ..color = stroke.color
             ..strokeWidth = stroke.strokeWidth
             ..strokeCap = StrokeCap.round;
-
       for (int i = 0; i < stroke.points.length - 1; i++) {
         if (stroke.points[i] != null && stroke.points[i + 1] != null) {
           canvas.drawLine(stroke.points[i]!, stroke.points[i + 1]!, paint);
@@ -251,7 +305,7 @@ class _ImageDrawingPainter extends CustomPainter {
       }
     }
 
-    final livePaint =
+    final paint =
         Paint()
           ..color = currentColor
           ..strokeWidth = currentWidth
@@ -259,7 +313,7 @@ class _ImageDrawingPainter extends CustomPainter {
 
     for (int i = 0; i < current.length - 1; i++) {
       if (current[i] != null && current[i + 1] != null) {
-        canvas.drawLine(current[i]!, current[i + 1]!, livePaint);
+        canvas.drawLine(current[i]!, current[i + 1]!, paint);
       }
     }
   }

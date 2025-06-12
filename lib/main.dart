@@ -1,9 +1,10 @@
-import 'package:file_editor/image_annotator.dart';
-import 'package:file_editor/pdf_annotator.dart';
+import 'package:file_editor/image/image_annotator.dart';
+import 'package:file_editor/pdf/pdf_annotator.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-void main() => runApp(const MaterialApp(home: MyApp()));
+void main() => runApp(ProviderScope(child: const MaterialApp(home: MyApp())));
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});

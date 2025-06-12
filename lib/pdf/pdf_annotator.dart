@@ -4,10 +4,12 @@ import 'dart:ui' as ui;
 import 'package:file_editor/permission_request_handler.dart';
 import 'package:file_editor/storage_directory_path.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdfx/pdfx.dart' as pdfx;
+
+import '../text_annotation/text_annotation.dart';
+import '../text_annotation/text_sticker.dart';
 
 class StrokeSegment {
   final List<Offset?> points;
@@ -34,6 +36,7 @@ class _PdfAnnotatorState extends State<PdfAnnotator> {
   int currentPage = 1;
   int totalPages = 0;
   final Map<int, List<StrokeSegment>> _drawingsPerPage = {};
+  final Map<int, List<TextAnnotation>> _textPerPage = {};
   List<Offset?> currentPoints = [];
   double scaleFactor = 1.0;
 
@@ -50,8 +53,10 @@ class _PdfAnnotatorState extends State<PdfAnnotator> {
       totalPages = doc.pagesCount;
       currentPage = 1;
       _drawingsPerPage.clear();
+      _textPerPage.clear();
       for (int i = 1; i <= totalPages; i++) {
         _drawingsPerPage[i] = [];
+        _textPerPage[i] = [];
       }
       currentPoints = [];
     });
@@ -84,10 +89,22 @@ class _PdfAnnotatorState extends State<PdfAnnotator> {
     });
   }
 
+  void _addTextAnnotation(String text) {
+    setState(() {
+      _textPerPage[currentPage]?.add(
+        TextAnnotation(
+          text: text,
+          position: const Offset(100, 100),
+          fontSize: 20.0,
+          color: penColor,
+        ),
+      );
+    });
+  }
+
   Future<void> _saveAnnotatedPdf() async {
     _saveCurrentStroke();
     final pdf = pw.Document();
-    final dir = await getExternalStorageDirectory();
 
     for (int i = 1; i <= totalPages; i++) {
       final page = await document!.getPage(i);
@@ -116,6 +133,27 @@ class _PdfAnnotatorState extends State<PdfAnnotator> {
             canvas.drawLine(stroke.points[j]!, stroke.points[j + 1]!, paint);
           }
         }
+      }
+
+      for (final text in _textPerPage[i]!) {
+        final scaledFontSize = text.fontSize * scaleFactor;
+        final scaledOffset = Offset(
+          text.position.dx * scaleFactor,
+          text.position.dy * scaleFactor,
+        );
+
+        final textPainter = TextPainter(
+          text: TextSpan(
+            text: text.text,
+            style: TextStyle(
+              fontSize: scaledFontSize,
+              color: text.color,
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        );
+        textPainter.layout();
+        textPainter.paint(canvas, scaledOffset);
       }
 
       final pic = recorder.endRecording();
@@ -147,10 +185,12 @@ class _PdfAnnotatorState extends State<PdfAnnotator> {
     );
     final file = File(path);
     await file.writeAsBytes(pdfBytes);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('PDF saved to $path')));
-    Navigator.pop(context);
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('PDF saved to $path')));
+      Navigator.pop(context);
+    }
   }
 
   @override
@@ -158,42 +198,54 @@ class _PdfAnnotatorState extends State<PdfAnnotator> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('PDF Annotator'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              DropdownButton<Color>(
-                value: penColor,
-                onChanged: (Color? newColor) {
-                  if (newColor != null) {
-                    setState(() => penColor = newColor);
-                  }
-                },
-                items:
-                    [
-                          Colors.red,
-                          Colors.blue,
-                          Colors.green,
-                          Colors.black,
-                          Colors.yellow,
-                        ]
-                        .map(
-                          (color) => DropdownMenuItem(
-                            value: color,
-                            child: Container(
-                              width: 24,
-                              height: 24,
-                              color: color,
-                            ),
-                          ),
-                        )
-                        .toList(),
-              ),
-            ],
-          ),
-        ),
         actions: [
+          DropdownButton<Color>(
+            value: penColor,
+            onChanged: (Color? newColor) {
+              if (newColor != null) {
+                setState(() => penColor = newColor);
+              }
+            },
+            items:
+                [
+                      Colors.red,
+                      Colors.blue,
+                      Colors.green,
+                      Colors.black,
+                      Colors.yellow,
+                    ]
+                    .map(
+                      (color) => DropdownMenuItem(
+                        value: color,
+                        child: Container(width: 24, height: 24, color: color),
+                      ),
+                    )
+                    .toList(),
+          ),
+          IconButton(
+            icon: const Icon(Icons.text_fields),
+            onPressed: () async {
+              final controller = TextEditingController();
+              final result = await showDialog<String>(
+                context: context,
+                builder:
+                    (_) => AlertDialog(
+                      title: const Text('Enter Text'),
+                      content: TextField(controller: controller),
+                      actions: [
+                        TextButton(
+                          onPressed:
+                              () => Navigator.pop(context, controller.text),
+                          child: const Text('Add'),
+                        ),
+                      ],
+                    ),
+              );
+              if (result != null && result.trim().isNotEmpty) {
+                _addTextAnnotation(result.trim());
+              }
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.save),
             onPressed: _saveAnnotatedPdf,
@@ -235,10 +287,7 @@ class _PdfAnnotatorState extends State<PdfAnnotator> {
                         currentPoints.add(local * scaleFactor);
                       });
                     },
-                    onPanEnd:
-                        (_) => setState(() {
-                          _saveCurrentStroke();
-                        }),
+                    onPanEnd: (_) => setState(() => _saveCurrentStroke()),
                     child: SizedBox(
                       width: displayWidth,
                       height: displayHeight,
@@ -255,6 +304,24 @@ class _PdfAnnotatorState extends State<PdfAnnotator> {
                             ),
                             size: Size(displayWidth, displayHeight),
                           ),
+                          ...?_textPerPage[currentPage]?.map((annotation) {
+                            return TextSticker(
+                              key: ValueKey(annotation),
+                              text: annotation.text,
+                              color: annotation.color,
+                              initialFontSize: annotation.fontSize,
+                              initialPosition: annotation.position,
+                              onChanged: (pos, size) {
+                                annotation.position = pos;
+                                annotation.fontSize = size;
+                              },
+                              onDelete: () {
+                                setState(() {
+                                  _textPerPage[currentPage]?.remove(annotation);
+                                });
+                              },
+                            );
+                          }),
                         ],
                       ),
                     ),
