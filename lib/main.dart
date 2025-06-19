@@ -28,27 +28,33 @@ class _MyAppState extends State<MyApp> {
           fileType == '.jpg' ||
           fileType == '.png' ||
           fileType == '.webp') {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) {
-              return ImageAnnotator(filePath);
-            },
-          ),
-        );
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) {
+                return ImageAnnotator(filePath);
+              },
+            ),
+          );
+        }
       } else if (fileType == '.pdf') {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) {
-              return PdfAnnotator(filePath);
-            },
-          ),
-        );
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) {
+                return PdfAnnotator(filePath);
+              },
+            ),
+          );
+        }
       } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("File type is not supported")));
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("File type is not supported")));
+        }
       }
     }
   }

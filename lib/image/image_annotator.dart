@@ -6,7 +6,7 @@ import 'package:file_editor/permission_request_handler.dart';
 import 'package:file_editor/storage_directory_path.dart';
 import 'package:flutter/material.dart';
 
-import '../pdf/pdf_annotator.dart';
+import '../text_annotation/stroke_segment.dart';
 
 class ImageAnnotator extends StatefulWidget {
   final String? filePath;
