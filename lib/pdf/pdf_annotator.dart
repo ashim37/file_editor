@@ -1,16 +1,10 @@
-import 'package:file_editor/pdf/pdf_annotator_riverpods.dart';
-import 'package:file_editor/pdf/pdf_annotator_state.dart';
-import 'package:file_editor/text_annotation/text_sticker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfx/pdfx.dart' as pdfx;
-
 import '../text_annotation/stroke_segment.dart';
+import '../text_annotation/text_sticker.dart';
+import '../pdf/pdf_annotator_riverpods.dart';
 
-final pdfEditorProvider =
-    StateNotifierProvider<PDFAnnotatorRiverPods, PdfAnnotatorState>(
-      (ref) => PDFAnnotatorRiverPods(),
-    );
 
 class PdfAnnotator extends ConsumerStatefulWidget {
   final String? filePath;
@@ -35,34 +29,48 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(pdfEditorProvider);
+    final currentPage = ref.watch(
+      pdfEditorProvider.select((s) => s.currentPage),
+    );
+    final totalPages = ref.watch(pdfEditorProvider.select((s) => s.totalPages));
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('PDF Annotator'),
         actions: [
-          DropdownButton<Color>(
-            value: state.penColor,
-            onChanged: (color) {
-              if (color != null) {
-                ref.read(pdfEditorProvider.notifier).setPenColor(color);
-              }
+          Consumer(
+            builder: (context, ref, _) {
+              final penColor = ref.watch(
+                pdfEditorProvider.select((s) => s.penColor),
+              );
+              return DropdownButton<Color>(
+                value: penColor,
+                onChanged: (color) {
+                  if (color != null) {
+                    ref.read(pdfEditorProvider.notifier).setPenColor(color);
+                  }
+                },
+                items:
+                    [
+                          Colors.red,
+                          Colors.blue,
+                          Colors.green,
+                          Colors.black,
+                          Colors.yellow,
+                        ]
+                        .map(
+                          (color) => DropdownMenuItem(
+                            value: color,
+                            child: Container(
+                              width: 24,
+                              height: 24,
+                              color: color,
+                            ),
+                          ),
+                        )
+                        .toList(),
+              );
             },
-            items:
-                [
-                      Colors.red,
-                      Colors.blue,
-                      Colors.green,
-                      Colors.black,
-                      Colors.yellow,
-                    ]
-                    .map(
-                      (color) => DropdownMenuItem(
-                        value: color,
-                        child: Container(width: 24, height: 24, color: color),
-                      ),
-                    )
-                    .toList(),
           ),
           IconButton(
             icon: const Icon(Icons.text_fields),
@@ -93,84 +101,110 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
           IconButton(icon: const Icon(Icons.save), onPressed: savePdf),
         ],
       ),
-      body:
-          state.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : FutureBuilder<pdfx.PdfPageImage?>(
-                future: state.document!
-                    .getPage(state.currentPage)
-                    .then(
-                      (page) => page
-                          .render(
-                            width: page.width,
-                            height: page.height,
-                            format: pdfx.PdfPageImageFormat.png,
-                          )
-                          .whenComplete(() => page.close()),
-                    ),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+      body: Consumer(
+        builder: (context, ref, _) {
+          final isLoading = ref.watch(
+            pdfEditorProvider.select((s) => s.isLoading),
+          );
+          final document = ref.watch(
+            pdfEditorProvider.select((s) => s.document),
+          );
+          final currentPage = ref.watch(
+            pdfEditorProvider.select((s) => s.currentPage),
+          );
+          if (isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (document == null) {
+            return const Center(child: Text('No document loaded'));
+          }
+          return FutureBuilder<pdfx.PdfPageImage?>(
+            future: document
+                .getPage(currentPage)
+                .then(
+                  (page) => page
+                      .render(width: page.width, height: page.height)
+                      .whenComplete(() => page.close()),
+                ),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final image = snapshot.data!;
+              final ratio = image.width! / image.height!;
+              final displayWidth = MediaQuery.of(context).size.width;
+              final displayHeight = displayWidth / ratio;
+              final scale = image.width! / displayWidth;
 
-                  return Container(
-                    color: Colors.white,
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final ratio =
-                            snapshot.data!.width! / snapshot.data!.height!;
-                        final displayWidth = constraints.maxWidth;
-                        final displayHeight = displayWidth / ratio;
-                        final scale = snapshot.data!.width! / displayWidth;
+              if (_lastScaleFactor != scale ||
+                  _lastPageForScale != currentPage) {
+                _lastScaleFactor = scale;
+                _lastPageForScale = currentPage;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ref.read(pdfEditorProvider.notifier).updateScaleFactor(scale);
+                });
+              }
 
-                        if (_lastScaleFactor != scale ||
-                            _lastPageForScale != state.currentPage) {
-                          _lastScaleFactor = scale;
-                          _lastPageForScale = state.currentPage;
-
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            ref
-                                .read(pdfEditorProvider.notifier)
-                                .updateScaleFactor(scale);
-                          });
-                        }
-                        return GestureDetector(
-                          onPanUpdate: (details) {
-                            ref
-                                .read(pdfEditorProvider.notifier)
-                                .onPanUpdate(
-                                  details,
-                                  context.findRenderObject() as RenderBox,
-                                );
-                          },
-                          onPanEnd:
-                              (_) =>
-                                  ref
-                                      .read(pdfEditorProvider.notifier)
-                                      .saveCurrentStroke(),
-                          child: SizedBox(
-                            width: displayWidth,
-                            height: displayHeight,
-                            child: Stack(
-                              children: [
-                                Image.memory(
-                                  snapshot.data!.bytes,
-                                  fit: BoxFit.fill,
-                                ),
-                                CustomPaint(
-                                  painter: _PdfDrawingPainter(
-                                    state.drawingsPerPage[state.currentPage] ??
-                                        [],
-                                    state.currentPoints,
-                                    state.penColor,
-                                    state.strokeWidth,
-                                    state.scaleFactor,
-                                  ),
-                                  size: Size(displayWidth, displayHeight),
-                                ),
-                                ...state.textPerPage[state.currentPage]!.map((
-                                  annotation,
-                                ) {
+              return Container(
+                color: Colors.white,
+                width: displayWidth,
+                height: displayHeight,
+                child: GestureDetector(
+                  onPanUpdate: (details) {
+                    ref
+                        .read(pdfEditorProvider.notifier)
+                        .onPanUpdate(
+                          details,
+                          context.findRenderObject() as RenderBox,
+                        );
+                  },
+                  onPanEnd: (_) {
+                    ref.read(pdfEditorProvider.notifier).saveCurrentStroke();
+                  },
+                  child: Stack(
+                    children: [
+                      Image.memory(image.bytes, fit: BoxFit.fill),
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final strokes = ref.watch(
+                            pdfEditorProvider.select(
+                              (s) => s.drawingsPerPage[currentPage] ?? [],
+                            ),
+                          );
+                          final currentPoints = ref.watch(
+                            pdfEditorProvider.select((s) => s.currentPoints),
+                          );
+                          final penColor = ref.watch(
+                            pdfEditorProvider.select((s) => s.penColor),
+                          );
+                          final strokeWidth = ref.watch(
+                            pdfEditorProvider.select((s) => s.strokeWidth),
+                          );
+                          final scaleFactor = ref.watch(
+                            pdfEditorProvider.select((s) => s.scaleFactor),
+                          );
+                          return CustomPaint(
+                            painter: _PdfDrawingPainter(
+                              strokes,
+                              currentPoints,
+                              penColor,
+                              strokeWidth,
+                              scaleFactor,
+                            ),
+                            size: Size(displayWidth, displayHeight),
+                          );
+                        },
+                      ),
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final texts = ref.watch(
+                            pdfEditorProvider.select(
+                              (s) => s.textPerPage[currentPage] ?? [],
+                            ),
+                          );
+                          return Stack(
+                            children:
+                                texts.map((annotation) {
                                   return TextSticker(
                                     key: ValueKey(annotation),
                                     text: annotation.text,
@@ -188,40 +222,43 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                                     },
                                   );
                                 }).toList(),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
+                          );
+                        },
+                      ),
+                      // GestureDetector for drawing remains unchanged
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
       bottomNavigationBar: BottomAppBar(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             IconButton(
               onPressed:
-                  state.currentPage > 1
+                  currentPage > 1
                       ? () => ref
                           .read(pdfEditorProvider.notifier)
-                          .goToPage(state.currentPage - 1)
+                          .goToPage(currentPage - 1)
                       : null,
               icon: const Icon(Icons.arrow_back),
             ),
-            Text('Page ${state.currentPage} / ${state.totalPages}'),
+            Text('Page $currentPage / $totalPages'),
             IconButton(
               onPressed:
-                  state.currentPage < state.totalPages
+                  currentPage < totalPages
                       ? () => ref
                           .read(pdfEditorProvider.notifier)
-                          .goToPage(state.currentPage + 1)
+                          .goToPage(currentPage + 1)
                       : null,
               icon: const Icon(Icons.arrow_forward),
             ),
             IconButton(
-              icon: const Icon(Icons.clear),
+              icon: const Icon(Icons.undo),
               onPressed:
                   () => ref.read(pdfEditorProvider.notifier).clearDrawing(),
             ),
@@ -232,32 +269,27 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
   }
 
   void savePdf() async {
-    AlertDialog alert = AlertDialog(
-      content: Row(
-        children: [
-          CircularProgressIndicator(),
-          Container(
-            margin: EdgeInsets.only(left: 7),
-            child: Text("Saving PDF..."),
-          ),
-        ],
-      ),
-    );
     showDialog(
       barrierDismissible: false,
       context: context,
-      builder: (BuildContext context) {
-        return alert;
-      },
+      builder:
+          (_) => const AlertDialog(
+            content: Row(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 12),
+                Text("Saving PDF..."),
+              ],
+            ),
+          ),
     );
     final path = await ref.read(pdfEditorProvider.notifier).saveAnnotatedPdf();
-
     if (mounted) {
-      Navigator.pop(context); // dismiss loading
+      Navigator.pop(context);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('PDF saved to $path')));
-      Navigator.pop(context); // close editor
+      Navigator.pop(context);
     }
   }
 }
@@ -285,7 +317,6 @@ class _PdfDrawingPainter extends CustomPainter {
             ..color = stroke.color
             ..strokeWidth = stroke.strokeWidth / scaleFactor
             ..strokeCap = StrokeCap.round;
-
       for (int i = 0; i < stroke.points.length - 1; i++) {
         if (stroke.points[i] != null && stroke.points[i + 1] != null) {
           canvas.drawLine(
@@ -297,18 +328,17 @@ class _PdfDrawingPainter extends CustomPainter {
       }
     }
 
-    final paint =
+    final livePaint =
         Paint()
           ..color = currentColor
           ..strokeWidth = currentWidth / scaleFactor
           ..strokeCap = StrokeCap.round;
-
     for (int i = 0; i < current.length - 1; i++) {
       if (current[i] != null && current[i + 1] != null) {
         canvas.drawLine(
           current[i]! / scaleFactor,
           current[i + 1]! / scaleFactor,
-          paint,
+          livePaint,
         );
       }
     }

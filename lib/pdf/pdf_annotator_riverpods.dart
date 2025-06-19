@@ -74,12 +74,17 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
   }
 
   void clearDrawing() {
-    List<StrokeSegment> current = [...state.drawingsPerPage[state.currentPage] ?? []];
+    List<StrokeSegment> current = [
+      ...state.drawingsPerPage[state.currentPage] ?? [],
+    ];
     if (current.isNotEmpty) {
       final last = current.removeLast();
       List<StrokeSegment> updatedUndoStack = [...state.undoStack, last];
 
-      Map<int, List<StrokeSegment>> updatedMap = {...state.drawingsPerPage, state.currentPage: current};
+      Map<int, List<StrokeSegment>> updatedMap = {
+        ...state.drawingsPerPage,
+        state.currentPage: current,
+      };
 
       state = state.copyWith(
         drawingsPerPage: updatedMap,
@@ -99,16 +104,23 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
       ),
     ];
 
-    Map<int, List<TextAnnotation>> updatedMap = {...state.textPerPage, state.currentPage: updatedTexts};
+    Map<int, List<TextAnnotation>> updatedMap = {
+      ...state.textPerPage,
+      state.currentPage: updatedTexts,
+    };
 
     state = state.copyWith(textPerPage: updatedMap);
   }
 
   void deleteText(TextAnnotation annotation) {
-    List<TextAnnotation> updatedTexts = [...state.textPerPage[state.currentPage] ?? []]
-      ..remove(annotation);
+    List<TextAnnotation> updatedTexts = [
+      ...state.textPerPage[state.currentPage] ?? [],
+    ]..remove(annotation);
 
-    Map<int, List<TextAnnotation>> updatedMap = {...state.textPerPage, state.currentPage: updatedTexts};
+    Map<int, List<TextAnnotation>> updatedMap = {
+      ...state.textPerPage,
+      state.currentPage: updatedTexts,
+    };
 
     state = state.copyWith(textPerPage: updatedMap);
   }
@@ -150,10 +162,11 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
         canvas.drawImage(uiImage, Offset.zero, paint);
 
         for (final stroke in state.drawingsPerPage[i]!) {
-          final paint = Paint()
-            ..color = stroke.color
-            ..strokeWidth = stroke.strokeWidth
-            ..strokeCap = StrokeCap.round;
+          final paint =
+              Paint()
+                ..color = stroke.color
+                ..strokeWidth = stroke.strokeWidth
+                ..strokeCap = StrokeCap.round;
           for (int j = 0; j < stroke.points.length - 1; j++) {
             if (stroke.points[j] != null && stroke.points[j + 1] != null) {
               canvas.drawLine(stroke.points[j]!, stroke.points[j + 1]!, paint);
@@ -211,3 +224,8 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
     return path;
   }
 }
+
+final pdfEditorProvider =
+    StateNotifierProvider<PDFAnnotatorRiverPods, PdfAnnotatorState>(
+      (ref) => PDFAnnotatorRiverPods(),
+    );
