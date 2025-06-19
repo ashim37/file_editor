@@ -9,7 +9,7 @@ class TextAnnotation {
   TextAnnotation({
     required this.text,
     required this.position,
-    this.fontSize = 20.0,
+    this.fontSize = 12.0,
     this.color = Colors.black,
   });
 }

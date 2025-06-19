@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:open_file/open_file.dart';
 import 'package:pdfx/pdfx.dart' as pdfx;
 import '../text_annotation/stroke_segment.dart';
 import '../text_annotation/text_sticker.dart';
 import '../pdf/pdf_annotator_riverpods.dart';
-
 
 class PdfAnnotator extends ConsumerStatefulWidget {
   final String? filePath;
@@ -286,11 +286,24 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
     final path = await ref.read(pdfEditorProvider.notifier).saveAnnotatedPdf();
     if (mounted) {
       Navigator.pop(context);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('PDF saved to $path')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('PDF saved to $path'),
+          duration: const Duration(seconds: 2),
+          action: SnackBarAction(
+            label: 'Open',
+            onPressed: () {
+              openFile(path); // Implement this function to open the file
+            },
+          ),
+        ),
+      );
       Navigator.pop(context);
     }
+  }
+
+  void openFile(String path) {
+    OpenFile.open(path);
   }
 }
 
