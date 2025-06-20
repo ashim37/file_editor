@@ -20,6 +20,8 @@ class PdfAnnotatorState {
   final double strokeWidth;
   final Map<int, List<Shape>>? shapePerPage;
   final Map<int, List<CommentAnnotation>> commentsPerPage;
+  final bool addTagMode;
+  final Size pdfPageSize;
 
   PdfAnnotatorState({
     required this.isLoading,
@@ -35,6 +37,8 @@ class PdfAnnotatorState {
     required this.strokeWidth,
     required this.shapePerPage,
     required this.commentsPerPage,
+    required this.addTagMode,
+    this.pdfPageSize = const Size(0, 0),
   });
 
   PdfAnnotatorState copyWith({
@@ -51,6 +55,8 @@ class PdfAnnotatorState {
     double? scaleFactor,
     double? strokeWidth,
     Map<int, List<CommentAnnotation>>? commentsPerPage,
+    bool? addTagMode,
+    Size? pdfPageSize,
   }) {
     return PdfAnnotatorState(
       isLoading: isLoading ?? this.isLoading,
@@ -66,6 +72,8 @@ class PdfAnnotatorState {
       strokeWidth: strokeWidth ?? this.strokeWidth,
       shapePerPage: shapePerPage ?? this.shapePerPage,
       commentsPerPage: commentsPerPage ?? this.commentsPerPage,
+      addTagMode: addTagMode ?? this.addTagMode,
+      pdfPageSize: pdfPageSize ?? this.pdfPageSize,
     );
   }
 }

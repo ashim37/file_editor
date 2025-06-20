@@ -33,6 +33,7 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
           strokeWidth: 3.0,
           shapePerPage: {},
           commentsPerPage: {},
+          addTagMode: false,
         ),
       );
 
@@ -50,6 +51,18 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
       textPerPage: {for (var i = 1; i <= pagesCount; i++) i: []},
       currentPoints: [],
     );
+
+    setPDFPageSize();
+  }
+
+  void setPDFPageSize() async {
+    final page = await state.document?.getPage(state.currentPage);
+    final size = Size(
+      page?.width.toDouble() ?? 0,
+      page?.height.toDouble() ?? 0,
+    );
+    state = state.copyWith(pdfPageSize: size);
+    await page?.close();
   }
 
   void onPanUpdate(DragUpdateDetails details, RenderBox box) {
@@ -135,6 +148,7 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
       saveCurrentStroke();
       state = state.copyWith(currentPage: page, currentPoints: []);
     }
+    setPDFPageSize();
   }
 
   void setPenColor(Color color) {
@@ -229,15 +243,17 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
           }
         }
 
+        const double iconSize = 24;
+        const double iconRadius = iconSize / 2;
         for (final comment in state.commentsPerPage[i] ?? []) {
-          final offset = Offset(
-            comment.position.dx * state.scaleFactor,
-            comment.position.dy * state.scaleFactor,
+          final offset = comment.position; // Already in PDF coordinates
+          final centeredOffset = offset - Offset(iconRadius, iconRadius);
+          canvas.drawCircle(
+            centeredOffset + Offset(iconRadius, iconRadius),
+            iconRadius,
+            Paint()..color = Colors.orange,
           );
-          // Draw the comment icon (circle)
-          canvas.drawCircle(offset, 10, Paint()..color = Colors.orange);
 
-          // Draw the comment text next to the icon
           final textPainter = TextPainter(
             text: TextSpan(
               text: comment.comment,
@@ -246,7 +262,7 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
             textDirection: TextDirection.ltr,
           );
           textPainter.layout();
-          textPainter.paint(canvas, offset + Offset(14, -8));
+          textPainter.paint(canvas, centeredOffset + Offset(iconSize + 2, -8));
         }
 
         final pic = recorder.endRecording();
@@ -349,9 +365,13 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
     };
     state = state.copyWith(commentsPerPage: updatedMap);
   }
+
+  void setToggle(bool value) {
+    state = state.copyWith(addTagMode: value);
+  }
 }
 
 final pdfEditorProvider =
-    StateNotifierProvider<PDFAnnotatorRiverPods, PdfAnnotatorState>(
+    StateNotifierProvider.autoDispose<PDFAnnotatorRiverPods, PdfAnnotatorState>(
       (ref) => PDFAnnotatorRiverPods(),
     );

@@ -21,7 +21,6 @@ class PdfAnnotator extends ConsumerStatefulWidget {
 class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
   double? _lastScaleFactor;
   int? _lastPageForScale;
-  bool addTagMode = false;
 
   @override
   void initState() {
@@ -76,18 +75,23 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
               );
             },
           ),
-          IconButton(icon: const Icon(Icons.save), onPressed: savePdf),
-          IconButton(
-            icon: Icon(
-              Icons.add_comment,
-              color: addTagMode ? Colors.orange : null,
-            ),
-            onPressed: () {
-              setState(() {
-                addTagMode = !addTagMode;
-              });
+          Consumer(
+            builder: (context, ref, _) {
+              final addTagMode = ref.watch(
+                pdfEditorProvider.select((s) => s.addTagMode),
+              );
+              return IconButton(
+                icon: Icon(
+                  Icons.add_comment,
+                  color: addTagMode ? Colors.orange : null,
+                ),
+                onPressed: () {
+                  ref.read(pdfEditorProvider.notifier).setToggle(!addTagMode);
+                },
+              );
             },
           ),
+          IconButton(icon: const Icon(Icons.save), onPressed: savePdf),
           PopupMenuButton<ShapeType>(
             onSelected: (value) {
               if (value == ShapeType.text) {
@@ -272,37 +276,37 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                               (s) => s.commentsPerPage[currentPage] ?? [],
                             ),
                           );
+
+                          // Get display and PDF page sizes
+                          final displaySize = Size(displayWidth, displayHeight);
+                          final pdfPageSize = ref.watch(
+                            pdfEditorProvider.select((s) => s.pdfPageSize),
+                          );
+
                           return Stack(
                             children:
                                 comments.map((annotation) {
+                                  final scaleX =
+                                      displaySize.width / pdfPageSize.width;
+                                  final scaleY =
+                                      displaySize.height / pdfPageSize.height;
+                                  final widgetPos = Offset(
+                                    annotation.position.dx * scaleX,
+                                    annotation.position.dy * scaleY,
+                                  );
+
+                                  const double iconSize = 24;
                                   return Positioned(
-                                    left: annotation.position.dx,
-                                    top: annotation.position.dy,
+                                    left: widgetPos.dx - iconSize / 2,
+                                    top: widgetPos.dy - iconSize / 2,
                                     child: GestureDetector(
                                       onTap: () {
-                                        showDialog(
-                                          context: context,
-                                          builder:
-                                              (_) => AlertDialog(
-                                                content: Text(
-                                                  annotation.comment,
-                                                ),
-                                                actions: [
-                                                  TextButton(
-                                                    onPressed:
-                                                        () => Navigator.pop(
-                                                          context,
-                                                        ),
-                                                    child: const Text('Close'),
-                                                  ),
-                                                ],
-                                              ),
-                                        );
+                                        showCommentDialog(context, annotation);
                                       },
                                       child: const Icon(
-                                        Icons.comment,
+                                        Icons.message_outlined,
                                         color: Colors.orange,
-                                        size: 24,
+                                        size: iconSize,
                                       ),
                                     ),
                                   );
@@ -455,6 +459,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
     double displayWidth,
     double displayHeight,
   ) async {
+    final addTagMode = ref.watch(pdfEditorProvider.select((s) => s.addTagMode));
     if (addTagMode) {
       final RenderBox box = context.findRenderObject() as RenderBox;
       final localPos = box.globalToLocal(details.globalPosition);
@@ -479,9 +484,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
             .read(pdfEditorProvider.notifier)
             .addCommentAnnotation(comment.trim(), localPos * _lastScaleFactor!);
       }
-      setState(() {
-        addTagMode = false;
-      });
+      ref.read(pdfEditorProvider.notifier).setToggle(false);
     }
   }
 }
