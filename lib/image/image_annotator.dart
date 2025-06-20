@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'package:file_editor/shape_type.dart';
 import 'package:file_editor/text_annotation/text_sticker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
+import '../shape/draggable_resizable_shape.dart';
 import '../text_annotation/stroke_segment.dart';
 import 'image_river_pods.dart';
 
@@ -97,37 +99,21 @@ class _ImageAnnotatorState extends ConsumerState<ImageAnnotator> {
                     .toList(),
           ),
           IconButton(
-            icon: const Icon(Icons.text_fields),
-            onPressed: () async {
-              final controller = TextEditingController();
-              final result = await showDialog<String>(
-                context: context,
-                builder:
-                    (_) => AlertDialog(
-                      title: const Text('Enter Text'),
-                      content: TextField(controller: controller),
-                      actions: [
-                        TextButton(
-                          onPressed:
-                              () => Navigator.pop(context, controller.text),
-                          child: const Text('Add'),
-                        ),
-                      ],
-                    ),
-              );
-              if (result != null && result.trim().isNotEmpty) {
-                ref
-                    .read(imageEditorProvider.notifier)
-                    .addTextAnnotation(result.trim());
-              }
-            },
-          ),
-          IconButton(
             icon: const Icon(Icons.undo),
             onPressed:
                 () => ref.read(imageEditorProvider.notifier).clearDrawing(),
           ),
           IconButton(icon: const Icon(Icons.save), onPressed: saveImage),
+          PopupMenuButton<ShapeType>(
+            onSelected: (value) {
+              if (value == ShapeType.text) {
+                showTextDialog();
+              } else {
+                ref.read(imageEditorProvider.notifier).addShape(value);
+              }
+            },
+            itemBuilder: getPopUpItems,
+          ),
         ],
       ),
       body: Consumer(
@@ -204,6 +190,29 @@ class _ImageAnnotatorState extends ConsumerState<ImageAnnotator> {
                           ],
                         );
                       }),
+                      ...state.shapes.asMap().entries.map((entry) {
+                        final i = entry.key;
+                        final shape = entry.value;
+                        return Stack(
+                          children: [
+                            DraggableResizableShape(
+                              key: ValueKey(i),
+                              shape: shape,
+                              color: state.penColor,
+                              onUpdate: (pos, size) {
+                                ref
+                                    .read(imageEditorProvider.notifier)
+                                    .updateShape(i, pos, size);
+                              },
+                              onDelete: () {
+                                ref
+                                    .read(imageEditorProvider.notifier)
+                                    .deleteShape(i);
+                              },
+                            ),
+                          ],
+                        );
+                      }),
                     ],
                   ),
                 ),
@@ -215,8 +224,50 @@ class _ImageAnnotatorState extends ConsumerState<ImageAnnotator> {
     );
   }
 
+  void showTextDialog() async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+            title: const Text('Enter Text'),
+            content: TextField(controller: controller),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, controller.text),
+                child: const Text('Add'),
+              ),
+            ],
+          ),
+    );
+    if (result != null && result.trim().isNotEmpty) {
+      ref.read(imageEditorProvider.notifier).addTextAnnotation(result.trim());
+    }
+  }
+
   void openFile(String path) {
     OpenFile.open(path);
+  }
+
+  List<PopupMenuEntry<ShapeType>> getPopUpItems(BuildContext context) {
+    return [
+      PopupMenuItem(
+        value: ShapeType.text,
+        child: Icon(Icons.text_fields_outlined),
+      ),
+      PopupMenuItem(
+        value: ShapeType.circle,
+        child: Icon(Icons.circle_outlined),
+      ),
+      PopupMenuItem(
+        value: ShapeType.line,
+        child: Icon(Icons.shape_line_outlined),
+      ),
+      PopupMenuItem(
+        value: ShapeType.rectangle,
+        child: Icon(Icons.rectangle_outlined),
+      ),
+    ];
   }
 }
 

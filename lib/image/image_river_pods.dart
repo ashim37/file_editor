@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../permission_request_handler.dart';
+import '../shape/shape.dart';
+import '../shape_type.dart';
 import '../storage_directory_path.dart';
 import '../text_annotation/text_annotation.dart';
 import '../text_annotation/stroke_segment.dart';
@@ -19,6 +21,24 @@ class ImageEditorState {
   final double scaleFactorY;
   final double displayWidth;
   final double displayHeight;
+  final List<Shape> shapes;
+
+  factory ImageEditorState.initial() {
+    return ImageEditorState(
+      image: null,
+      imagePath: null,
+      penColor: Colors.red,
+      strokeWidth: 3.0,
+      strokes: [],
+      currentPoints: [],
+      textAnnotations: [],
+      shapes: [],
+      displayWidth: 0,
+      displayHeight: 0,
+      scaleFactorX: 1.0,
+      scaleFactorY: 1.0,
+    );
+  }
 
   ImageEditorState({
     this.image,
@@ -32,6 +52,7 @@ class ImageEditorState {
     required this.scaleFactorY,
     required this.displayWidth,
     required this.displayHeight,
+    required this.shapes,
   });
 
   ImageEditorState copyWith({
@@ -46,6 +67,7 @@ class ImageEditorState {
     double? scaleFactorY,
     double? displayWidth,
     double? displayHeight,
+    List<Shape>? shapes,
   }) {
     return ImageEditorState(
       image: image ?? this.image,
@@ -59,21 +81,13 @@ class ImageEditorState {
       scaleFactorY: scaleFactorY ?? this.scaleFactorY,
       displayWidth: displayWidth ?? this.displayWidth,
       displayHeight: displayHeight ?? this.displayHeight,
+      shapes: shapes ?? this.shapes,
     );
   }
 }
 
 class ImageEditorNotifier extends StateNotifier<ImageEditorState> {
-  ImageEditorNotifier()
-    : super(
-        ImageEditorState(
-          strokeWidth: 3.0,
-          scaleFactorX: 1.0,
-          scaleFactorY: 1.0,
-          displayWidth: 0,
-          displayHeight: 0,
-        ),
-      );
+  ImageEditorNotifier() : super(ImageEditorState.initial());
 
   void loadImage(String path) async {
     final bytes = await File(path).readAsBytes();
@@ -190,6 +204,39 @@ class ImageEditorNotifier extends StateNotifier<ImageEditorState> {
       painter.paint(canvas, scaledOffset);
     }
 
+    for (final shape in state.shapes) {
+      final paint =
+          Paint()
+            ..color = state.penColor
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 3;
+      final pos = Offset(
+        (shape.position.dx - horizontalOffset) * scaleFactorX,
+        (shape.position.dy - verticalOffset) * scaleFactorY,
+      );
+      final size = Size(
+        shape.size.width * scaleFactorX,
+        shape.size.height * scaleFactorY,
+      );
+      switch (shape.type) {
+        case ShapeType.circle:
+          canvas.drawOval(pos & size, paint);
+          break;
+        case ShapeType.rectangle:
+          canvas.drawRect(pos & size, paint);
+          break;
+        case ShapeType.line:
+          canvas.drawLine(
+            Offset(pos.dx, pos.dy + size.height),
+            Offset(pos.dx + size.width, pos.dy),
+            paint,
+          );
+          break;
+        default:
+          break;
+      }
+    }
+
     final picture = recorder.endRecording();
     final rendered = await picture.toImage(image.width, image.height);
     final byteData = await rendered.toByteData(format: ui.ImageByteFormat.png);
@@ -221,9 +268,45 @@ class ImageEditorNotifier extends StateNotifier<ImageEditorState> {
       scaleFactorY: state.image!.height / height,
     );
   }
+
+  void updateShape(int i, ui.Offset pos, ui.Size size) {
+    var shapes = Shape(type: state.shapes[i].type, position: pos, size: size);
+    state = state.copyWith(shapes: [...state.shapes]..[i] = shapes);
+  }
+
+  void addShape(ShapeType type) {
+    final shape = Shape(
+      type: type,
+      position: const Offset(100, 100),
+      size: const Size(100, 100),
+    );
+    state = state.copyWith(shapes: [...state.shapes, shape]);
+  }
+
+  void deleteShape(int index) {
+    final updated =
+        [...state.shapes]
+          ..removeAt(index)
+          ..insert(
+            index,
+            Shape(
+              type: ShapeType.empty,
+              position: const Offset(0, 0),
+              size: const Size(0, 0),
+            ),
+          );
+
+    state = state.copyWith(shapes: updated);
+  }
+
+  @override
+  void dispose() {
+    state = ImageEditorState.initial();
+    super.dispose();
+  }
 }
 
 final imageEditorProvider =
-    StateNotifierProvider<ImageEditorNotifier, ImageEditorState>(
+    StateNotifierProvider.autoDispose<ImageEditorNotifier, ImageEditorState>(
       (ref) => ImageEditorNotifier(),
     );
