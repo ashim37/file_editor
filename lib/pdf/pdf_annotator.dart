@@ -1,3 +1,4 @@
+import 'package:file_editor/pdf/comment_annotation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
@@ -20,6 +21,7 @@ class PdfAnnotator extends ConsumerStatefulWidget {
 class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
   double? _lastScaleFactor;
   int? _lastPageForScale;
+  bool addTagMode = false;
 
   @override
   void initState() {
@@ -75,6 +77,17 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
             },
           ),
           IconButton(icon: const Icon(Icons.save), onPressed: savePdf),
+          IconButton(
+            icon: Icon(
+              Icons.add_comment,
+              color: addTagMode ? Colors.orange : null,
+            ),
+            onPressed: () {
+              setState(() {
+                addTagMode = !addTagMode;
+              });
+            },
+          ),
           PopupMenuButton<ShapeType>(
             onSelected: (value) {
               if (value == ShapeType.text) {
@@ -144,11 +157,21 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                           context.findRenderObject() as RenderBox,
                         );
                   },
+                  onTapDown: (details) async {
+                    onTapDown(
+                      details,
+                      context,
+                      ref,
+                      displayWidth,
+                      displayHeight,
+                    );
+                  },
                   onPanEnd: (_) {
                     ref.read(pdfEditorProvider.notifier).saveCurrentStroke();
                   },
                   child: Stack(
                     children: [
+                      // In your Stack, overlay comment icons:
                       Image.memory(image.bytes, fit: BoxFit.fill),
                       Consumer(
                         builder: (context, ref, _) {
@@ -242,7 +265,51 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                           );
                         },
                       ),
-                      // GestureDetector for drawing remains unchanged
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final comments = ref.watch(
+                            pdfEditorProvider.select(
+                              (s) => s.commentsPerPage[currentPage] ?? [],
+                            ),
+                          );
+                          return Stack(
+                            children:
+                                comments.map((annotation) {
+                                  return Positioned(
+                                    left: annotation.position.dx,
+                                    top: annotation.position.dy,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        showDialog(
+                                          context: context,
+                                          builder:
+                                              (_) => AlertDialog(
+                                                content: Text(
+                                                  annotation.comment,
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed:
+                                                        () => Navigator.pop(
+                                                          context,
+                                                        ),
+                                                    child: const Text('Close'),
+                                                  ),
+                                                ],
+                                              ),
+                                        );
+                                      },
+                                      child: const Icon(
+                                        Icons.comment,
+                                        color: Colors.orange,
+                                        size: 24,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -362,6 +429,59 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
     );
     if (result != null && result.trim().isNotEmpty) {
       ref.read(pdfEditorProvider.notifier).addTextAnnotation(result.trim());
+    }
+  }
+
+  void showCommentDialog(BuildContext context, CommentAnnotation annotation) {
+    showDialog(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+            content: Text(annotation.comment),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void onTapDown(
+    TapDownDetails details,
+    BuildContext context,
+    WidgetRef ref,
+    double displayWidth,
+    double displayHeight,
+  ) async {
+    if (addTagMode) {
+      final RenderBox box = context.findRenderObject() as RenderBox;
+      final localPos = box.globalToLocal(details.globalPosition);
+      final comment = await showDialog<String>(
+        context: context,
+        builder: (_) {
+          final controller = TextEditingController();
+          return AlertDialog(
+            title: const Text('Add Comment'),
+            content: TextField(controller: controller),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, controller.text),
+                child: const Text('Add'),
+              ),
+            ],
+          );
+        },
+      );
+      if (comment != null && comment.trim().isNotEmpty) {
+        ref
+            .read(pdfEditorProvider.notifier)
+            .addCommentAnnotation(comment.trim(), localPos * _lastScaleFactor!);
+      }
+      setState(() {
+        addTagMode = false;
+      });
     }
   }
 }

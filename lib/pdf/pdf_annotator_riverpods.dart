@@ -14,6 +14,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:pdfx/pdfx.dart' as pdfx;
 
 import '../text_annotation/stroke_segment.dart';
+import 'comment_annotation.dart';
 
 class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
   PDFAnnotatorRiverPods()
@@ -31,6 +32,7 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
           scaleFactor: 1.0,
           strokeWidth: 3.0,
           shapePerPage: {},
+          commentsPerPage: {},
         ),
       );
 
@@ -227,6 +229,26 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
           }
         }
 
+        for (final comment in state.commentsPerPage[i] ?? []) {
+          final offset = Offset(
+            comment.position.dx * state.scaleFactor,
+            comment.position.dy * state.scaleFactor,
+          );
+          // Draw the comment icon (circle)
+          canvas.drawCircle(offset, 10, Paint()..color = Colors.orange);
+
+          // Draw the comment text next to the icon
+          final textPainter = TextPainter(
+            text: TextSpan(
+              text: comment.comment,
+              style: TextStyle(fontSize: 16, color: Colors.black),
+            ),
+            textDirection: TextDirection.ltr,
+          );
+          textPainter.layout();
+          textPainter.paint(canvas, offset + Offset(14, -8));
+        }
+
         final pic = recorder.endRecording();
         final annotatedImage = await pic.toImage(image.width!, image.height!);
         final pngBytes = await annotatedImage.toByteData(
@@ -303,6 +325,29 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
       };
       state = state.copyWith(shapePerPage: updatedMap);
     }
+  }
+
+  void addCommentAnnotation(String comment, Offset position) {
+    List<CommentAnnotation> updated = [
+      ...state.commentsPerPage[state.currentPage] ?? [],
+      CommentAnnotation(comment: comment, position: position),
+    ];
+    Map<int, List<CommentAnnotation>>? updatedMap = {
+      ...state.commentsPerPage,
+      state.currentPage: updated,
+    };
+    state = state.copyWith(commentsPerPage: updatedMap);
+  }
+
+  void deleteCommentAnnotation(CommentAnnotation annotation) {
+    List<CommentAnnotation> updated = [
+      ...state.commentsPerPage[state.currentPage] ?? [],
+    ]..remove(annotation);
+    Map<int, List<CommentAnnotation>>? updatedMap = {
+      ...state.commentsPerPage,
+      state.currentPage: updated,
+    };
+    state = state.copyWith(commentsPerPage: updatedMap);
   }
 }
 
