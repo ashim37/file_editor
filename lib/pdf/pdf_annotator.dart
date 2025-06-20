@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 import 'package:pdfx/pdfx.dart' as pdfx;
+import '../shape/draggable_resizable_shape.dart';
+import '../shape_type.dart';
 import '../text_annotation/stroke_segment.dart';
 import '../text_annotation/text_sticker.dart';
 import '../pdf/pdf_annotator_riverpods.dart';
@@ -72,33 +74,17 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.text_fields),
-            onPressed: () async {
-              final controller = TextEditingController();
-              final result = await showDialog<String>(
-                context: context,
-                builder:
-                    (_) => AlertDialog(
-                      title: const Text('Enter Text'),
-                      content: TextField(controller: controller),
-                      actions: [
-                        TextButton(
-                          onPressed:
-                              () => Navigator.pop(context, controller.text),
-                          child: const Text('Add'),
-                        ),
-                      ],
-                    ),
-              );
-              if (result != null && result.trim().isNotEmpty) {
-                ref
-                    .read(pdfEditorProvider.notifier)
-                    .addTextAnnotation(result.trim());
+          IconButton(icon: const Icon(Icons.save), onPressed: savePdf),
+          PopupMenuButton<ShapeType>(
+            onSelected: (value) {
+              if (value == ShapeType.text) {
+                showTextDialog();
+              } else {
+                ref.read(pdfEditorProvider.notifier).addShape(value);
               }
             },
+            itemBuilder: getPopUpItems,
           ),
-          IconButton(icon: const Icon(Icons.save), onPressed: savePdf),
         ],
       ),
       body: Consumer(
@@ -225,6 +211,37 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                           );
                         },
                       ),
+
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final shapes = ref.watch(
+                            pdfEditorProvider.select(
+                              (s) => s.shapePerPage?[currentPage] ?? [],
+                            ),
+                          );
+                          return Stack(
+                            children:
+                                shapes.asMap().entries.map((entry) {
+                                  final i = entry.key;
+                                  final shape = entry.value;
+                                  return DraggableResizableShape(
+                                    key: ValueKey(shape),
+                                    shape: shape,
+                                    color: shape.color,
+                                    onUpdate: (pos, size) {
+                                      shape.position = pos;
+                                      shape.size = size;
+                                    },
+                                    onDelete: () {
+                                      ref
+                                          .read(pdfEditorProvider.notifier)
+                                          .deleteShape(i);
+                                    },
+                                  );
+                                }).toList(),
+                          );
+                        },
+                      ),
                       // GestureDetector for drawing remains unchanged
                     ],
                   ),
@@ -268,6 +285,27 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
     );
   }
 
+  List<PopupMenuEntry<ShapeType>> getPopUpItems(BuildContext context) {
+    return [
+      PopupMenuItem(
+        value: ShapeType.text,
+        child: Icon(Icons.text_fields_outlined),
+      ),
+      PopupMenuItem(
+        value: ShapeType.circle,
+        child: Icon(Icons.circle_outlined),
+      ),
+      PopupMenuItem(
+        value: ShapeType.line,
+        child: Icon(Icons.shape_line_outlined),
+      ),
+      PopupMenuItem(
+        value: ShapeType.rectangle,
+        child: Icon(Icons.rectangle_outlined),
+      ),
+    ];
+  }
+
   void savePdf() async {
     showDialog(
       barrierDismissible: false,
@@ -304,6 +342,27 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
 
   void openFile(String path) {
     OpenFile.open(path);
+  }
+
+  void showTextDialog() async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+            title: const Text('Enter Text'),
+            content: TextField(controller: controller),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, controller.text),
+                child: const Text('Add'),
+              ),
+            ],
+          ),
+    );
+    if (result != null && result.trim().isNotEmpty) {
+      ref.read(pdfEditorProvider.notifier).addTextAnnotation(result.trim());
+    }
   }
 }
 

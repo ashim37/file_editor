@@ -2,6 +2,8 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui';
 import 'package:file_editor/pdf/pdf_annotator_state.dart';
+import 'package:file_editor/shape/shape.dart';
+import 'package:file_editor/shape_type.dart';
 import 'package:file_editor/text_annotation/text_annotation.dart';
 import 'package:file_editor/permission_request_handler.dart';
 import 'package:file_editor/storage_directory_path.dart';
@@ -28,6 +30,7 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
           penColor: Colors.red,
           scaleFactor: 1.0,
           strokeWidth: 3.0,
+          shapePerPage: {},
         ),
       );
 
@@ -191,6 +194,39 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
           textPainter.paint(canvas, scaledOffset);
         }
 
+        for (final shape in state.shapePerPage?[i] ?? []) {
+          final paint =
+              Paint()
+                ..color = shape.color
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = 3;
+
+          final rect = Rect.fromLTWH(
+            shape.position.dx * state.scaleFactor,
+            shape.position.dy * state.scaleFactor,
+            shape.size.width * state.scaleFactor,
+            shape.size.height * state.scaleFactor,
+          );
+
+          switch (shape.type) {
+            case ShapeType.circle:
+              canvas.drawOval(rect, paint);
+              break;
+            case ShapeType.rectangle:
+              canvas.drawRect(rect, paint);
+              break;
+            case ShapeType.line:
+              canvas.drawLine(
+                Offset(rect.left, rect.bottom),
+                Offset(rect.right, rect.top),
+                paint,
+              );
+              break;
+            default:
+              break;
+          }
+        }
+
         final pic = recorder.endRecording();
         final annotatedImage = await pic.toImage(image.width!, image.height!);
         final pngBytes = await annotatedImage.toByteData(
@@ -222,6 +258,51 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
     final file = File(path);
     await file.writeAsBytes(pdfBytes);
     return path;
+  }
+
+  void addShape(ShapeType value) {
+    final shape = Shape(
+      type: value,
+      position: const Offset(100, 100),
+      size: const Size(100, 100),
+      color: state.penColor,
+    );
+
+    List<Shape> updatedShape = [
+      ...state.shapePerPage?[state.currentPage] ?? [],
+      shape,
+    ];
+
+    Map<int, List<Shape>> updatedMap = {
+      ...?state.shapePerPage,
+      state.currentPage: updatedShape,
+    };
+
+    state = state.copyWith(shapePerPage: updatedMap);
+  }
+
+  void updateShape(int index, Offset pos, Size size, Shape shape) {
+    List<Shape> shapes = [...state.shapePerPage?[state.currentPage] ?? []];
+    if (index >= 0 && index < shapes.length) {
+      shapes[index] = shape.copyWith(position: pos, size: size);
+      Map<int, List<Shape>>? updatedMap = {
+        ...?state.shapePerPage,
+        state.currentPage: shapes,
+      };
+      state = state.copyWith(shapePerPage: updatedMap);
+    }
+  }
+
+  void deleteShape(int index) {
+    List<Shape> shapes = [...state.shapePerPage?[state.currentPage] ?? []];
+    if (index >= 0 && index < shapes.length) {
+      shapes.removeAt(index);
+      Map<int, List<Shape>>? updatedMap = {
+        ...?state.shapePerPage,
+        state.currentPage: shapes,
+      };
+      state = state.copyWith(shapePerPage: updatedMap);
+    }
   }
 }
 

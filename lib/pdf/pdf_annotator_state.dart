@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:file_editor/shape/shape.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 import '../text_annotation/stroke_segment.dart';
@@ -16,6 +17,7 @@ class PdfAnnotatorState {
   final Color penColor;
   final double scaleFactor;
   final double strokeWidth;
+  final Map<int, List<Shape>>? shapePerPage;
 
   PdfAnnotatorState({
     required this.isLoading,
@@ -29,6 +31,7 @@ class PdfAnnotatorState {
     required this.penColor,
     required this.scaleFactor,
     required this.strokeWidth,
+    required this.shapePerPage,
   });
 
   PdfAnnotatorState copyWith({
@@ -39,6 +42,7 @@ class PdfAnnotatorState {
     Map<int, List<StrokeSegment>>? drawingsPerPage,
     List<Offset?>? currentPoints,
     Map<int, List<TextAnnotation>>? textPerPage,
+    Map<int, List<Shape>>? shapePerPage,
     List<StrokeSegment>? undoStack,
     Color? penColor,
     double? scaleFactor,
@@ -56,6 +60,7 @@ class PdfAnnotatorState {
       penColor: penColor ?? this.penColor,
       scaleFactor: scaleFactor ?? this.scaleFactor,
       strokeWidth: strokeWidth ?? this.strokeWidth,
+      shapePerPage: shapePerPage ?? this.shapePerPage,
     );
   }
 }
