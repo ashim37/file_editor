@@ -67,11 +67,15 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
               left: size.width / 2 - handleSize / 2,
               top: -handleSize / 2,
               onPanUpdate: (details) {
-                double newHeight = (size.height - details.delta.dy).clamp(minSize, maxSize);
+                double newHeight = (size.height - details.delta.dy).clamp(
+                  minSize,
+                  maxSize,
+                );
                 double dy = position.dy;
                 if (newHeight != size.height) {
                   dy = position.dy + details.delta.dy;
-                  if (newHeight == minSize) dy = position.dy + (size.height - minSize);
+                  if (newHeight == minSize)
+                    dy = position.dy + (size.height - minSize);
                   _update(Offset(position.dx, dy), Size(size.width, newHeight));
                 }
               },
@@ -80,7 +84,10 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
               left: size.width / 2 - handleSize / 2,
               top: size.height - handleSize / 2,
               onPanUpdate: (details) {
-                double newHeight = (size.height + details.delta.dy).clamp(minSize, maxSize);
+                double newHeight = (size.height + details.delta.dy).clamp(
+                  minSize,
+                  maxSize,
+                );
                 if (newHeight != size.height) {
                   _update(position, Size(size.width, newHeight));
                 }
@@ -90,11 +97,15 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
               left: -handleSize / 2,
               top: size.height / 2 - handleSize / 2,
               onPanUpdate: (details) {
-                double newWidth = (size.width - details.delta.dx).clamp(minSize, maxSize);
+                double newWidth = (size.width - details.delta.dx).clamp(
+                  minSize,
+                  maxSize,
+                );
                 double dx = position.dx;
                 if (newWidth != size.width) {
                   dx = position.dx + details.delta.dx;
-                  if (newWidth == minSize) dx = position.dx + (size.width - minSize);
+                  if (newWidth == minSize)
+                    dx = position.dx + (size.width - minSize);
                   _update(Offset(dx, position.dy), Size(newWidth, size.height));
                 }
               },
@@ -103,7 +114,10 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
               left: size.width - handleSize / 2,
               top: size.height / 2 - handleSize / 2,
               onPanUpdate: (details) {
-                double newWidth = (size.width + details.delta.dx).clamp(minSize, maxSize);
+                double newWidth = (size.width + details.delta.dx).clamp(
+                  minSize,
+                  maxSize,
+                );
                 if (newWidth != size.width) {
                   _update(position, Size(newWidth, size.height));
                 }
@@ -114,33 +128,49 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
               left: -handleSize / 2,
               top: -handleSize / 2,
               onPanUpdate: (details) {
-                double newWidth = (size.width - details.delta.dx).clamp(minSize, maxSize);
-                double newHeight = (size.height - details.delta.dy).clamp(minSize, maxSize);
+                double newWidth = (size.width - details.delta.dx).clamp(
+                  minSize,
+                  maxSize,
+                );
+                double newHeight = (size.height - details.delta.dy).clamp(
+                  minSize,
+                  maxSize,
+                );
                 double dx = position.dx;
                 double dy = position.dy;
                 if (newWidth != size.width) {
                   dx = position.dx + details.delta.dx;
-                  if (newWidth == minSize) dx = position.dx + (size.width - minSize);
+                  if (newWidth == minSize)
+                    dx = position.dx + (size.width - minSize);
                 }
                 if (newHeight != size.height) {
                   dy = position.dy + details.delta.dy;
-                  if (newHeight == minSize) dy = position.dy + (size.height - minSize);
+                  if (newHeight == minSize)
+                    dy = position.dy + (size.height - minSize);
                 }
                 if (newWidth != size.width || newHeight != size.height) {
                   _update(Offset(dx, dy), Size(newWidth, newHeight));
                 }
               },
             ),
+
             _buildHandle(
               left: size.width - handleSize / 2,
               top: -handleSize / 2,
               onPanUpdate: (details) {
-                double newWidth = (size.width + details.delta.dx).clamp(minSize, maxSize);
-                double newHeight = (size.height - details.delta.dy).clamp(minSize, maxSize);
+                double newWidth = (size.width + details.delta.dx).clamp(
+                  minSize,
+                  maxSize,
+                );
+                double newHeight = (size.height - details.delta.dy).clamp(
+                  minSize,
+                  maxSize,
+                );
                 double dy = position.dy;
                 if (newHeight != size.height) {
                   dy = position.dy + details.delta.dy;
-                  if (newHeight == minSize) dy = position.dy + (size.height - minSize);
+                  if (newHeight == minSize)
+                    dy = position.dy + (size.height - minSize);
                 }
                 if (newWidth != size.width || newHeight != size.height) {
                   _update(Offset(position.dx, dy), Size(newWidth, newHeight));
@@ -151,12 +181,19 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
               left: -handleSize / 2,
               top: size.height - handleSize / 2,
               onPanUpdate: (details) {
-                double newWidth = (size.width - details.delta.dx).clamp(minSize, maxSize);
-                double newHeight = (size.height + details.delta.dy).clamp(minSize, maxSize);
+                double newWidth = (size.width - details.delta.dx).clamp(
+                  minSize,
+                  maxSize,
+                );
+                double newHeight = (size.height + details.delta.dy).clamp(
+                  minSize,
+                  maxSize,
+                );
                 double dx = position.dx;
                 if (newWidth != size.width) {
                   dx = position.dx + details.delta.dx;
-                  if (newWidth == minSize) dx = position.dx + (size.width - minSize);
+                  if (newWidth == minSize)
+                    dx = position.dx + (size.width - minSize);
                 }
                 if (newWidth != size.width || newHeight != size.height) {
                   _update(Offset(dx, position.dy), Size(newWidth, newHeight));
@@ -167,40 +204,42 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
               left: size.width - handleSize / 2,
               top: size.height - handleSize / 2,
               onPanUpdate: (details) {
-                double newWidth = (size.width + details.delta.dx).clamp(minSize, maxSize);
-                double newHeight = (size.height + details.delta.dy).clamp(minSize, maxSize);
+                double newWidth = (size.width + details.delta.dx).clamp(
+                  minSize,
+                  maxSize,
+                );
+                double newHeight = (size.height + details.delta.dy).clamp(
+                  minSize,
+                  maxSize,
+                );
                 if (newWidth != size.width || newHeight != size.height) {
                   _update(position, Size(newWidth, newHeight));
                 }
               },
             ),
-            // Delete button (unchanged)
-            Visibility(
-              visible: widget.shape.type != ShapeType.text && widget.shape.type != ShapeType.empty,
-              child: Positioned(
-                left: size.width - handleSize / 4 - 9,
-                top: -handleSize * 2 - 9,
+
+            if (widget.shape.type != ShapeType.text &&
+                widget.shape.type != ShapeType.empty &&
+                widget.shape.type != ShapeType.drawing)
+              Container(
+                alignment: Alignment.topRight,
+                margin: EdgeInsets.only(left: size.width, top: handleSize / 4),
                 child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
+                  behavior: HitTestBehavior.opaque,
                   onTap: widget.onDelete,
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    alignment: Alignment.center,
-                    child: Icon(
-                      Icons.delete_outline_outlined,
-                      color: Colors.red,
-                      size: 20,
-                    ),
+                  child: Icon(
+                    Icons.delete_outline_outlined,
+                    color: Colors.red,
+                    size: 24,
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),
     );
   }
+
   Widget _buildHandle({
     required double left,
     required double top,
@@ -259,9 +298,7 @@ class _ShapePainter extends CustomPainter {
       case ShapeType.line:
         canvas.drawLine(Offset(0, size.height), Offset(size.width, 0), paint);
         break;
-      case ShapeType.text:
-        break;
-      case ShapeType.empty:
+      case ShapeType.text || ShapeType.empty || ShapeType.drawing:
         break;
     }
   }

@@ -91,7 +91,7 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
     }
   }
 
-  void clearDrawing() {
+  void undoDrawing() {
     List<StrokeSegment> current = [
       ...state.drawingsPerPage[state.currentPage] ?? [],
     ];
@@ -108,6 +108,25 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
         drawingsPerPage: updatedMap,
         undoStack: updatedUndoStack,
       );
+    }
+  }
+
+  void redoDrawing() {
+    List<StrokeSegment> current = [
+      ...state.drawingsPerPage[state.currentPage] ?? [],
+    ];
+    if (state.undoStack.isNotEmpty) {
+      StrokeSegment last = state.undoStack.last;
+      state.undoStack.removeLast();
+
+      List<StrokeSegment> updatedStack = [...current, last];
+
+      Map<int, List<StrokeSegment>> updatedMap = {
+        ...state.drawingsPerPage,
+        state.currentPage: updatedStack,
+      };
+
+      state = state.copyWith(drawingsPerPage: updatedMap);
     }
   }
 
@@ -368,6 +387,10 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
 
   void setToggle(bool value) {
     state = state.copyWith(addTagMode: value);
+  }
+
+  void setDrawingEnabled() {
+    state = state.copyWith(drawingEnabled: !state.drawingEnabled);
   }
 }
 

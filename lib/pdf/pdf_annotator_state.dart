@@ -22,6 +22,7 @@ class PdfAnnotatorState {
   final Map<int, List<CommentAnnotation>> commentsPerPage;
   final bool addTagMode;
   final Size pdfPageSize;
+  final bool drawingEnabled;
 
   PdfAnnotatorState({
     required this.isLoading,
@@ -39,6 +40,7 @@ class PdfAnnotatorState {
     required this.commentsPerPage,
     required this.addTagMode,
     this.pdfPageSize = const Size(0, 0),
+    this.drawingEnabled = false,
   });
 
   PdfAnnotatorState copyWith({
@@ -57,6 +59,7 @@ class PdfAnnotatorState {
     Map<int, List<CommentAnnotation>>? commentsPerPage,
     bool? addTagMode,
     Size? pdfPageSize,
+    bool? drawingEnabled,
   }) {
     return PdfAnnotatorState(
       isLoading: isLoading ?? this.isLoading,
@@ -74,6 +77,7 @@ class PdfAnnotatorState {
       commentsPerPage: commentsPerPage ?? this.commentsPerPage,
       addTagMode: addTagMode ?? this.addTagMode,
       pdfPageSize: pdfPageSize ?? this.pdfPageSize,
+      drawingEnabled: drawingEnabled ?? this.drawingEnabled,
     );
   }
 }

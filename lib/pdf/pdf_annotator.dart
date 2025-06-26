@@ -92,15 +92,26 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
             },
           ),
           IconButton(icon: const Icon(Icons.save), onPressed: savePdf),
-          PopupMenuButton<ShapeType>(
-            onSelected: (value) {
-              if (value == ShapeType.text) {
-                showTextDialog();
-              } else {
-                ref.read(pdfEditorProvider.notifier).addShape(value);
-              }
+
+          Consumer(
+            builder: (context, ref, _) {
+              final drawingEnabled = ref.watch(
+                pdfEditorProvider.select((s) => s.drawingEnabled),
+              );
+              return PopupMenuButton<ShapeType>(
+                onSelected: (value) {
+                  if (value == ShapeType.text) {
+                    showTextDialog();
+                  } else if (value == ShapeType.drawing) {
+                    ref.read(pdfEditorProvider.notifier).setDrawingEnabled();
+                  } else {
+                    ref.read(pdfEditorProvider.notifier).addShape(value);
+                  }
+                },
+                itemBuilder:
+                    (context) => getPopUpItems(context, drawingEnabled),
+              );
             },
-            itemBuilder: getPopUpItems,
           ),
         ],
       ),
@@ -115,6 +126,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
           final currentPage = ref.watch(
             pdfEditorProvider.select((s) => s.currentPage),
           );
+
           if (isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -148,18 +160,23 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                 });
               }
 
+              final drawingEnabled = ref.watch(
+                pdfEditorProvider.select((s) => s.drawingEnabled),
+              );
               return Container(
                 color: Colors.white,
                 width: displayWidth,
                 height: displayHeight,
                 child: GestureDetector(
                   onPanUpdate: (details) {
-                    ref
-                        .read(pdfEditorProvider.notifier)
-                        .onPanUpdate(
-                          details,
-                          context.findRenderObject() as RenderBox,
-                        );
+                    if (drawingEnabled) {
+                      ref
+                          .read(pdfEditorProvider.notifier)
+                          .onPanUpdate(
+                            details,
+                            context.findRenderObject() as RenderBox,
+                          );
+                    }
                   },
                   onTapDown: (details) async {
                     onTapDown(
@@ -171,12 +188,15 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                     );
                   },
                   onPanEnd: (_) {
-                    ref.read(pdfEditorProvider.notifier).saveCurrentStroke();
+                    if (drawingEnabled) {
+                      ref.read(pdfEditorProvider.notifier).saveCurrentStroke();
+                    }
                   },
                   child: Stack(
                     children: [
                       // In your Stack, overlay comment icons:
                       Image.memory(image.bytes, fit: BoxFit.fill),
+
                       Consumer(
                         builder: (context, ref, _) {
                           final strokes = ref.watch(
@@ -208,6 +228,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                           );
                         },
                       ),
+
                       Consumer(
                         builder: (context, ref, _) {
                           final texts = ref.watch(
@@ -239,36 +260,6 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                         },
                       ),
 
-                      Consumer(
-                        builder: (context, ref, _) {
-                          final shapes = ref.watch(
-                            pdfEditorProvider.select(
-                              (s) => s.shapePerPage?[currentPage] ?? [],
-                            ),
-                          );
-                          return Stack(
-                            children:
-                                shapes.asMap().entries.map((entry) {
-                                  final i = entry.key;
-                                  final shape = entry.value;
-                                  return DraggableResizableShape(
-                                    key: ValueKey(shape),
-                                    shape: shape,
-                                    color: shape.color,
-                                    onUpdate: (pos, size) {
-                                      shape.position = pos;
-                                      shape.size = size;
-                                    },
-                                    onDelete: () {
-                                      ref
-                                          .read(pdfEditorProvider.notifier)
-                                          .deleteShape(i);
-                                    },
-                                  );
-                                }).toList(),
-                          );
-                        },
-                      ),
                       Consumer(
                         builder: (context, ref, _) {
                           final comments = ref.watch(
@@ -314,6 +305,36 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                           );
                         },
                       ),
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final shapes = ref.watch(
+                            pdfEditorProvider.select(
+                              (s) => s.shapePerPage?[currentPage] ?? [],
+                            ),
+                          );
+                          return Stack(
+                            children:
+                                shapes.asMap().entries.map((entry) {
+                                  final i = entry.key;
+                                  final shape = entry.value;
+                                  return DraggableResizableShape(
+                                    key: ValueKey(shape),
+                                    shape: shape,
+                                    color: shape.color,
+                                    onUpdate: (pos, size) {
+                                      shape.position = pos;
+                                      shape.size = size;
+                                    },
+                                    onDelete: () {
+                                      ref
+                                          .read(pdfEditorProvider.notifier)
+                                          .deleteShape(i);
+                                    },
+                                  );
+                                }).toList(),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -346,9 +367,14 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
               icon: const Icon(Icons.arrow_forward),
             ),
             IconButton(
-              icon: const Icon(Icons.undo),
+              icon: const Icon(Icons.undo_outlined),
               onPressed:
-                  () => ref.read(pdfEditorProvider.notifier).clearDrawing(),
+                  () => ref.read(pdfEditorProvider.notifier).undoDrawing(),
+            ),
+            IconButton(
+              icon: const Icon(Icons.redo_outlined),
+              onPressed:
+                  () => ref.read(pdfEditorProvider.notifier).redoDrawing(),
             ),
           ],
         ),
@@ -356,11 +382,21 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
     );
   }
 
-  List<PopupMenuEntry<ShapeType>> getPopUpItems(BuildContext context) {
+  List<PopupMenuEntry<ShapeType>> getPopUpItems(
+    BuildContext context,
+    bool drawingEnabled,
+  ) {
     return [
       PopupMenuItem(
         value: ShapeType.text,
         child: Icon(Icons.text_fields_outlined),
+      ),
+      PopupMenuItem(
+        value: ShapeType.drawing,
+        child: Icon(
+          Icons.draw_outlined,
+          color: drawingEnabled ? Colors.black : Colors.grey,
+        ),
       ),
       PopupMenuItem(
         value: ShapeType.circle,

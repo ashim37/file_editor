@@ -1,1 +1,1 @@
-enum ShapeType { circle, line, rectangle, text, empty }
+enum ShapeType { circle, line, rectangle, text, drawing, empty }
