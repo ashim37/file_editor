@@ -4,9 +4,9 @@ import 'package:file_editor/text_annotation/text_sticker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
-import '../shape/draggable_resizable_shape.dart';
-import '../text_annotation/stroke_segment.dart';
-import 'image_river_pods.dart';
+import 'package:file_editor/shape/draggable_resizable_shape.dart';
+import 'package:file_editor/text_annotation/stroke_segment.dart';
+import 'package:file_editor/image/image_river_pods.dart';
 
 class ImageAnnotator extends ConsumerStatefulWidget {
   final String? filePath;
@@ -25,7 +25,7 @@ class _ImageAnnotatorState extends ConsumerState<ImageAnnotator> {
   void initState() {
     super.initState();
     Future(() {
-      ref.read(imageEditorProvider.notifier).loadImage(widget.filePath ?? "");
+      ref.read(imageEditorProvider.notifier).loadImage(widget.filePath ?? '');
     });
   }
 
@@ -39,7 +39,7 @@ class _ImageAnnotatorState extends ConsumerState<ImageAnnotator> {
               children: [
                 CircularProgressIndicator(),
                 SizedBox(width: 12),
-                Text("Saving Image..."),
+                Text('Saving Image...'),
               ],
             ),
           ),
@@ -77,7 +77,7 @@ class _ImageAnnotatorState extends ConsumerState<ImageAnnotator> {
         actions: [
           DropdownButton<Color>(
             value: state.penColor,
-            onChanged: (Color? newColor) {
+            onChanged: (newColor) {
               if (newColor != null) {
                 ref.read(imageEditorProvider.notifier).setPenColor(newColor);
               }
@@ -250,7 +250,7 @@ class _ImageAnnotatorState extends ConsumerState<ImageAnnotator> {
   }
 
   List<PopupMenuEntry<ShapeType>> getPopUpItems(BuildContext context) {
-    return [
+    return const [
       PopupMenuItem(
         value: ShapeType.text,
         child: Icon(Icons.text_fields_outlined),

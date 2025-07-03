@@ -1,9 +1,9 @@
 import 'package:file_editor/shape/shape.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
-import '../text_annotation/stroke_segment.dart';
-import '../text_annotation/text_annotation.dart';
-import 'comment_annotation.dart';
+import 'package:file_editor/text_annotation/stroke_segment.dart';
+import 'package:file_editor/text_annotation/text_annotation.dart';
+import 'package:file_editor/pdf/comment_annotation.dart';
 
 class PdfAnnotatorState {
   final bool isLoading;

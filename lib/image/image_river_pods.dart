@@ -2,12 +2,12 @@ import 'dart:ui' as ui;
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../permission_request_handler.dart';
-import '../shape/shape.dart';
-import '../shape_type.dart';
-import '../storage_directory_path.dart';
-import '../text_annotation/text_annotation.dart';
-import '../text_annotation/stroke_segment.dart';
+import 'package:file_editor/permission_request_handler.dart';
+import 'package:file_editor/shape/shape.dart';
+import 'package:file_editor/shape_type.dart';
+import 'package:file_editor/storage_directory_path.dart';
+import 'package:file_editor/text_annotation/text_annotation.dart';
+import 'package:file_editor/text_annotation/stroke_segment.dart';
 
 class ImageEditorState {
   final ui.Image? image;
@@ -252,7 +252,7 @@ class ImageEditorNotifier extends StateNotifier<ImageEditorState> {
   }
 
   void clearDrawing() {
-    List<StrokeSegment> current = [...state.strokes];
+    final List<StrokeSegment> current = [...state.strokes];
     if (current.isNotEmpty) {
       current.removeLast();
 
@@ -270,7 +270,7 @@ class ImageEditorNotifier extends StateNotifier<ImageEditorState> {
   }
 
   void updateShape(int i, ui.Offset pos, ui.Size size) {
-    var shapes = Shape(type: state.shapes[i].type, position: pos, size: size);
+    final shapes = Shape(type: state.shapes[i].type, position: pos, size: size);
     state = state.copyWith(shapes: [...state.shapes]..[i] = shapes);
   }
 

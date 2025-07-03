@@ -4,7 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-void main() => runApp(ProviderScope(child: const MaterialApp(home: MyApp())));
+void main() => runApp(const ProviderScope(child: MaterialApp(home: MyApp())));
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -23,7 +23,7 @@ class _MyAppState extends State<MyApp> {
     );
     if (result != null && result.files.single.path != null) {
       filePath = result.files.single.path!;
-      var fileType = getFileExtension(filePath ?? "");
+      final fileType = getFileExtension(filePath ?? '');
       if (fileType == '.jpeg' ||
           fileType == '.jpg' ||
           fileType == '.png' ||
@@ -53,7 +53,7 @@ class _MyAppState extends State<MyApp> {
         if (mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text("File type is not supported")));
+          ).showSnackBar(const SnackBar(content: Text('File type is not supported')));
         }
       }
     }
@@ -76,7 +76,7 @@ class _MyAppState extends State<MyApp> {
               onPressed: _pickPdf,
               color: Colors.black,
               child: const Text(
-                "Pick PDF",
+                'Pick PDF',
                 style: TextStyle(color: Colors.white),
               ),
             ),

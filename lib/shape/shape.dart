@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../shape_type.dart';
+import 'package:file_editor/shape_type.dart';
 
 class Shape {
   ShapeType type;

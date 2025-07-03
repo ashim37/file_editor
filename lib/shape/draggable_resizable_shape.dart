@@ -93,13 +93,13 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
                     top: handleSize / 12,
                   ),
                   child: Tooltip(
-                    message: "Delete shape",
+                    message: 'Delete shape',
                     child: Material(
                       color: Colors.transparent,
                       child: InkResponse(
                         onTap: widget.onDelete,
                         radius: 18,
-                        child: Icon(Icons.close, color: Colors.red, size: 30),
+                        child: const Icon(Icons.close, color: Colors.red, size: 30),
                       ),
                     ),
                   ),
@@ -117,7 +117,7 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
         left: size.width / 2 - handleSize / 2,
         top: -handleSize / 2,
         onPanUpdate: (details) {
-          double newHeight = (size.height - details.delta.dy).clamp(
+          final double newHeight = (size.height - details.delta.dy).clamp(
             minSize,
             maxSize,
           );
@@ -135,7 +135,7 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
         left: size.width / 2 - handleSize / 2,
         top: size.height - handleSize / 2,
         onPanUpdate: (details) {
-          double newHeight = (size.height + details.delta.dy).clamp(
+          final double newHeight = (size.height + details.delta.dy).clamp(
             minSize,
             maxSize,
           );
@@ -148,7 +148,7 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
         left: -handleSize / 2,
         top: size.height / 2 - handleSize / 2,
         onPanUpdate: (details) {
-          double newWidth = (size.width - details.delta.dx).clamp(
+          final double newWidth = (size.width - details.delta.dx).clamp(
             minSize,
             maxSize,
           );
@@ -166,7 +166,7 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
         left: size.width - handleSize / 2,
         top: size.height / 2 - handleSize / 2,
         onPanUpdate: (details) {
-          double newWidth = (size.width + details.delta.dx).clamp(
+          final double newWidth = (size.width + details.delta.dx).clamp(
             minSize,
             maxSize,
           );
@@ -180,11 +180,11 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
         left: -handleSize / 2,
         top: -handleSize / 2,
         onPanUpdate: (details) {
-          double newWidth = (size.width - details.delta.dx).clamp(
+          final double newWidth = (size.width - details.delta.dx).clamp(
             minSize,
             maxSize,
           );
-          double newHeight = (size.height - details.delta.dy).clamp(
+          final double newHeight = (size.height - details.delta.dy).clamp(
             minSize,
             maxSize,
           );
@@ -211,11 +211,11 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
         left: size.width - handleSize / 2,
         top: -handleSize / 2,
         onPanUpdate: (details) {
-          double newWidth = (size.width + details.delta.dx).clamp(
+          final double newWidth = (size.width + details.delta.dx).clamp(
             minSize,
             maxSize,
           );
-          double newHeight = (size.height - details.delta.dy).clamp(
+          final double newHeight = (size.height - details.delta.dy).clamp(
             minSize,
             maxSize,
           );
@@ -235,11 +235,11 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
         left: -handleSize / 2,
         top: size.height - handleSize / 2,
         onPanUpdate: (details) {
-          double newWidth = (size.width - details.delta.dx).clamp(
+          final double newWidth = (size.width - details.delta.dx).clamp(
             minSize,
             maxSize,
           );
-          double newHeight = (size.height + details.delta.dy).clamp(
+          final double newHeight = (size.height + details.delta.dy).clamp(
             minSize,
             maxSize,
           );
@@ -259,11 +259,11 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
         left: size.width - handleSize / 2,
         top: size.height - handleSize / 2,
         onPanUpdate: (details) {
-          double newWidth = (size.width + details.delta.dx).clamp(
+          final double newWidth = (size.width + details.delta.dx).clamp(
             minSize,
             maxSize,
           );
-          double newHeight = (size.height + details.delta.dy).clamp(
+          final double newHeight = (size.height + details.delta.dy).clamp(
             minSize,
             maxSize,
           );

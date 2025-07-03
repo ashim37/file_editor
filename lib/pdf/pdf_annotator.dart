@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 import 'package:pdfx/pdfx.dart' as pdfx;
-import '../shape/draggable_resizable_shape.dart';
-import '../shape_type.dart';
-import '../text_annotation/stroke_segment.dart';
-import '../text_annotation/text_sticker.dart';
-import '../pdf/pdf_annotator_riverpods.dart';
+import 'package:file_editor/shape/draggable_resizable_shape.dart';
+import 'package:file_editor/shape_type.dart';
+import 'package:file_editor/text_annotation/stroke_segment.dart';
+import 'package:file_editor/text_annotation/text_sticker.dart';
+import 'package:file_editor/pdf/pdf_annotator_riverpods.dart';
 
 class PdfAnnotator extends ConsumerStatefulWidget {
   final String? filePath;
@@ -29,7 +29,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
   void initState() {
     super.initState();
     Future(() {
-      ref.read(pdfEditorProvider.notifier).loadPDF(widget.filePath ?? "");
+      ref.read(pdfEditorProvider.notifier).loadPDF(widget.filePath ?? '');
     });
   }
 
@@ -56,7 +56,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
               children: [
                 // Pen color dropdown
                 Tooltip(
-                  message: "Pen Color",
+                  message: 'Pen Color',
                   child: Consumer(
                     builder: (context, ref, _) {
                       final penColor = ref.watch(
@@ -114,7 +114,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                   ),
                 ),
                 Tooltip(
-                  message: "Add Comment",
+                  message: 'Add Comment',
                   child: Consumer(
                     builder: (context, ref, _) {
                       final addTagMode = ref.watch(
@@ -140,7 +140,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                       pdfEditorProvider.select((s) => s.drawingEnabled),
                     );
                     return Tooltip(
-                      message: "Draw/Shapes/Text",
+                      message: 'Draw/Shapes/Text',
                       child: PopupMenuButton<ShapeType>(
                         onSelected: (value) {
                           if (value == ShapeType.text) {
@@ -167,7 +167,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                   },
                 ),
                 Tooltip(
-                  message: "Save Annotated PDF",
+                  message: 'Save Annotated PDF',
                   child: IconButton(
                     icon: const Icon(
                       Icons.save_alt_rounded,
@@ -235,7 +235,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                 children: [
                   Center(
                     child: Container(
-                      margin: EdgeInsets.only(bottom: 100),
+                      margin: const EdgeInsets.only(bottom: 100),
                       color: Colors.white,
                       width: displayWidth,
                       height: displayHeight,
@@ -499,7 +499,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              tooltip: "Previous Page",
+                              tooltip: 'Previous Page',
                               onPressed:
                                   currentPage > 1
                                       ? () => ref
@@ -520,7 +520,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                               ),
                             ),
                             IconButton(
-                              tooltip: "Next Page",
+                              tooltip: 'Next Page',
                               onPressed:
                                   currentPage < totalPages
                                       ? () => ref
@@ -530,7 +530,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                               icon: const Icon(Icons.chevron_right, size: 28),
                             ),
                             IconButton(
-                              tooltip: "Undo",
+                              tooltip: 'Undo',
                               onPressed:
                                   () =>
                                       ref
@@ -539,7 +539,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                               icon: const Icon(Icons.undo, size: 22),
                             ),
                             IconButton(
-                              tooltip: "Redo",
+                              tooltip: 'Redo',
                               onPressed:
                                   () =>
                                       ref
@@ -566,7 +566,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
     bool drawingEnabled,
   ) {
     return [
-      PopupMenuItem(
+      const PopupMenuItem(
         value: ShapeType.text,
         child: Icon(Icons.text_fields_outlined),
       ),
@@ -577,15 +577,15 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
           color: drawingEnabled ? Colors.black : Colors.grey,
         ),
       ),
-      PopupMenuItem(
+      const PopupMenuItem(
         value: ShapeType.circle,
         child: Icon(Icons.circle_outlined),
       ),
-      PopupMenuItem(
+      const PopupMenuItem(
         value: ShapeType.line,
         child: Icon(Icons.shape_line_outlined),
       ),
-      PopupMenuItem(
+      const PopupMenuItem(
         value: ShapeType.rectangle,
         child: Icon(Icons.rectangle_outlined),
       ),
@@ -602,7 +602,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
               children: [
                 CircularProgressIndicator(),
                 SizedBox(width: 12),
-                Text("Saving PDF..."),
+                Text('Saving PDF...'),
               ],
             ),
           ),

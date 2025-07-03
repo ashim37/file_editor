@@ -4,9 +4,9 @@ import 'package:permission_handler/permission_handler.dart';
 
 Future<void> requestStoragePermission() async {
   if (Platform.isAndroid) {
-    var isManageExternalStorageGranted =
+    final isManageExternalStorageGranted =
         await Permission.manageExternalStorage.isGranted;
-    var isStorageGranted = await Permission.storage.isGranted;
+    final isStorageGranted = await Permission.storage.isGranted;
     if (!isManageExternalStorageGranted) {
       await Permission.manageExternalStorage.request(); // Android 11+
     }

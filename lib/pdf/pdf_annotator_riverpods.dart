@@ -13,8 +13,8 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdfx/pdfx.dart' as pdfx;
 
-import '../text_annotation/stroke_segment.dart';
-import 'comment_annotation.dart';
+import 'package:file_editor/text_annotation/stroke_segment.dart';
+import 'package:file_editor/pdf/comment_annotation.dart';
 
 class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
   PDFAnnotatorRiverPods()
@@ -37,7 +37,7 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
         ),
       );
 
-  get getTransformationController => state.transformationController;
+  TransformationController get getTransformationController => state.transformationController;
   StrokeSegment? _currentStroke;
 
   Future<void> loadPDF(String filePath) async {
@@ -69,14 +69,14 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
   }
 
   void undoDrawing() {
-    List<StrokeSegment> current = [
+    final List<StrokeSegment> current = [
       ...state.drawingsPerPage[state.currentPage] ?? [],
     ];
     if (current.isNotEmpty) {
       final last = current.removeLast();
-      List<StrokeSegment> updatedUndoStack = [...state.undoStack, last];
+      final List<StrokeSegment> updatedUndoStack = [...state.undoStack, last];
 
-      Map<int, List<StrokeSegment>> updatedMap = {
+      final Map<int, List<StrokeSegment>> updatedMap = {
         ...state.drawingsPerPage,
         state.currentPage: current,
       };
@@ -89,16 +89,16 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
   }
 
   void redoDrawing() {
-    List<StrokeSegment> current = [
+    final List<StrokeSegment> current = [
       ...state.drawingsPerPage[state.currentPage] ?? [],
     ];
     if (state.undoStack.isNotEmpty) {
-      StrokeSegment last = state.undoStack.last;
+      final StrokeSegment last = state.undoStack.last;
       state.undoStack.removeLast();
 
-      List<StrokeSegment> updatedStack = [...current, last];
+      final List<StrokeSegment> updatedStack = [...current, last];
 
-      Map<int, List<StrokeSegment>> updatedMap = {
+      final Map<int, List<StrokeSegment>> updatedMap = {
         ...state.drawingsPerPage,
         state.currentPage: updatedStack,
       };
@@ -108,7 +108,7 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
   }
 
   void addTextAnnotation(String text) {
-    List<TextAnnotation> updatedTexts = [
+    final List<TextAnnotation> updatedTexts = [
       ...state.textPerPage[state.currentPage] ?? [],
       TextAnnotation(
         text: text,
@@ -118,7 +118,7 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
       ),
     ];
 
-    Map<int, List<TextAnnotation>> updatedMap = {
+    final Map<int, List<TextAnnotation>> updatedMap = {
       ...state.textPerPage,
       state.currentPage: updatedTexts,
     };
@@ -127,11 +127,11 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
   }
 
   void deleteText(TextAnnotation annotation) {
-    List<TextAnnotation> updatedTexts = [
+    final List<TextAnnotation> updatedTexts = [
       ...state.textPerPage[state.currentPage] ?? [],
     ]..remove(annotation);
 
-    Map<int, List<TextAnnotation>> updatedMap = {
+    final Map<int, List<TextAnnotation>> updatedMap = {
       ...state.textPerPage,
       state.currentPage: updatedTexts,
     };
@@ -234,7 +234,7 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
         final textPainter = TextPainter(
           text: TextSpan(
             text: comment.comment,
-            style: TextStyle(fontSize: 16, color: Colors.black),
+            style: const TextStyle(fontSize: 16, color: Colors.black),
           ),
           textDirection: TextDirection.ltr,
         );
@@ -324,12 +324,12 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
       color: state.penColor,
     );
 
-    List<Shape> updatedShape = [
+    final List<Shape> updatedShape = [
       ...state.shapePerPage?[state.currentPage] ?? [],
       shape,
     ];
 
-    Map<int, List<Shape>> updatedMap = {
+    final Map<int, List<Shape>> updatedMap = {
       ...?state.shapePerPage,
       state.currentPage: updatedShape,
     };
@@ -338,10 +338,10 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
   }
 
   void updateShape(int index, Offset pos, Size size, Shape shape) {
-    List<Shape> shapes = [...state.shapePerPage?[state.currentPage] ?? []];
+    final List<Shape> shapes = [...state.shapePerPage?[state.currentPage] ?? []];
     if (index >= 0 && index < shapes.length) {
       shapes[index] = shape.copyWith(position: pos, size: size);
-      Map<int, List<Shape>>? updatedMap = {
+      final Map<int, List<Shape>> updatedMap = {
         ...?state.shapePerPage,
         state.currentPage: shapes,
       };
@@ -350,10 +350,10 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
   }
 
   void deleteShape(int index) {
-    List<Shape> shapes = [...state.shapePerPage?[state.currentPage] ?? []];
+    final List<Shape> shapes = [...state.shapePerPage?[state.currentPage] ?? []];
     if (index >= 0 && index < shapes.length) {
       shapes.removeAt(index);
-      Map<int, List<Shape>>? updatedMap = {
+      final Map<int, List<Shape>> updatedMap = {
         ...?state.shapePerPage,
         state.currentPage: shapes,
       };
@@ -374,10 +374,10 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
   }
 
   void deleteCommentAnnotation(CommentAnnotation annotation) {
-    List<CommentAnnotation> updated = [
+    final List<CommentAnnotation> updated = [
       ...state.commentsPerPage[state.currentPage] ?? [],
     ]..remove(annotation);
-    Map<int, List<CommentAnnotation>>? updatedMap = {
+    final Map<int, List<CommentAnnotation>> updatedMap = {
       ...state.commentsPerPage,
       state.currentPage: updated,
     };
