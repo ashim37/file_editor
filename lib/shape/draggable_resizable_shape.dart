@@ -74,8 +74,9 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
                 double dy = position.dy;
                 if (newHeight != size.height) {
                   dy = position.dy + details.delta.dy;
-                  if (newHeight == minSize)
+                  if (newHeight == minSize) {
                     dy = position.dy + (size.height - minSize);
+                  }
                   _update(Offset(position.dx, dy), Size(size.width, newHeight));
                 }
               },
@@ -104,8 +105,9 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
                 double dx = position.dx;
                 if (newWidth != size.width) {
                   dx = position.dx + details.delta.dx;
-                  if (newWidth == minSize)
+                  if (newWidth == minSize) {
                     dx = position.dx + (size.width - minSize);
+                  }
                   _update(Offset(dx, position.dy), Size(newWidth, size.height));
                 }
               },
@@ -140,13 +142,15 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
                 double dy = position.dy;
                 if (newWidth != size.width) {
                   dx = position.dx + details.delta.dx;
-                  if (newWidth == minSize)
+                  if (newWidth == minSize) {
                     dx = position.dx + (size.width - minSize);
+                  }
                 }
                 if (newHeight != size.height) {
                   dy = position.dy + details.delta.dy;
-                  if (newHeight == minSize)
+                  if (newHeight == minSize) {
                     dy = position.dy + (size.height - minSize);
+                  }
                 }
                 if (newWidth != size.width || newHeight != size.height) {
                   _update(Offset(dx, dy), Size(newWidth, newHeight));
@@ -169,8 +173,9 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
                 double dy = position.dy;
                 if (newHeight != size.height) {
                   dy = position.dy + details.delta.dy;
-                  if (newHeight == minSize)
+                  if (newHeight == minSize) {
                     dy = position.dy + (size.height - minSize);
+                  }
                 }
                 if (newWidth != size.width || newHeight != size.height) {
                   _update(Offset(position.dx, dy), Size(newWidth, newHeight));
@@ -192,8 +197,9 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
                 double dx = position.dx;
                 if (newWidth != size.width) {
                   dx = position.dx + details.delta.dx;
-                  if (newWidth == minSize)
+                  if (newWidth == minSize) {
                     dx = position.dx + (size.width - minSize);
+                  }
                 }
                 if (newWidth != size.width || newHeight != size.height) {
                   _update(Offset(dx, position.dy), Size(newWidth, newHeight));

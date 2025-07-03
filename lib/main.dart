@@ -1,5 +1,6 @@
 import 'package:file_editor/image/image_annotator.dart';
 import 'package:file_editor/pdf/pdf_annotator.dart';
+import 'package:file_editor/pdf_webview_page.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,7 +20,7 @@ class _MyAppState extends State<MyApp> {
   void _pickPdf() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pdf', 'jpeg', 'jpg', 'png', 'webp'],
+      allowedExtensions: ['pdf'],
     );
     if (result != null && result.files.single.path != null) {
       filePath = result.files.single.path!;
@@ -67,14 +68,38 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: MaterialButton(
-          height: 40,
-          onPressed: _pickPdf,
-          color: Colors.black,
-          child: const Text(
-            "Pick Image or PDF",
-            style: TextStyle(color: Colors.white),
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            MaterialButton(
+              height: 40,
+              onPressed: _pickPdf,
+              color: Colors.black,
+              child: const Text(
+                "Pick PDF",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+            MaterialButton(
+              height: 40,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) {
+                      return const PDFAnnotatorWebView();
+                    },
+                  ),
+                );
+              },
+              color: Colors.black,
+              child: const Text(
+                "Pick PDF using WebView",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
         ),
       ),
     );

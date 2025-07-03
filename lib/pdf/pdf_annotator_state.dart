@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:file_editor/shape/shape.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
@@ -23,6 +22,8 @@ class PdfAnnotatorState {
   final bool addTagMode;
   final Size pdfPageSize;
   final bool drawingEnabled;
+  final TransformationController transformationController =
+      TransformationController();
 
   PdfAnnotatorState({
     required this.isLoading,
@@ -60,6 +61,7 @@ class PdfAnnotatorState {
     bool? addTagMode,
     Size? pdfPageSize,
     bool? drawingEnabled,
+    StrokeSegment? currentStroke,
   }) {
     return PdfAnnotatorState(
       isLoading: isLoading ?? this.isLoading,

@@ -37,6 +37,9 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
         ),
       );
 
+  get getTransformationController => state.transformationController;
+  StrokeSegment? _currentStroke;
+
   Future<void> loadPDF(String filePath) async {
     state = state.copyWith(isLoading: true);
     final doc = await pdfx.PdfDocument.openFile(filePath);
@@ -63,32 +66,6 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
     );
     state = state.copyWith(pdfPageSize: size);
     await page?.close();
-  }
-
-  void onPanUpdate(DragUpdateDetails details, RenderBox box) {
-    Offset local = box.globalToLocal(details.globalPosition);
-    final updatedPoints = [...state.currentPoints, local * state.scaleFactor];
-    state = state.copyWith(currentPoints: updatedPoints);
-  }
-
-  void saveCurrentStroke() {
-    if (state.currentPoints.isNotEmpty) {
-      List<StrokeSegment> updatedStrokes = [
-        ...state.drawingsPerPage[state.currentPage] ?? [],
-        StrokeSegment(
-          List.from(state.currentPoints),
-          state.penColor,
-          state.strokeWidth,
-        ),
-      ];
-
-      Map<int, List<StrokeSegment>> updatedMap = {
-        ...state.drawingsPerPage,
-        state.currentPage: updatedStrokes,
-      };
-
-      state = state.copyWith(drawingsPerPage: updatedMap, currentPoints: []);
-    }
   }
 
   void undoDrawing() {
@@ -178,133 +155,146 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
     state = state.copyWith(scaleFactor: factor);
   }
 
-  Future<String> saveAnnotatedPdf() async {
-    saveCurrentStroke(); // commit strokes
+  void onPanStart(DragStartDetails details, RenderBox box) {
+    final local = details.localPosition;
+    _currentStroke = StrokeSegment([local], state.penColor, state.strokeWidth);
+    state = state.copyWith(currentPoints: [local]);
+  }
 
-    return await Future.microtask(() async {
-      final pdf = pw.Document();
+  void onPanUpdate(DragUpdateDetails details, RenderBox box) {
+    if (_currentStroke == null) return;
+    final local = details.localPosition;
+    _currentStroke!.points.add(local);
+    state = state.copyWith(currentPoints: List.from(_currentStroke!.points));
+  }
 
-      for (int i = 1; i <= state.totalPages; i++) {
-        final page = await state.document!.getPage(i);
-        final image = await page.render(
-          width: page.width,
-          height: page.height,
-          format: pdfx.PdfPageImageFormat.png,
-        );
-        await page.close();
+  void saveCurrentStroke() {
+    if (_currentStroke == null) return;
+    final page = state.currentPage;
+    final existing = state.drawingsPerPage[page] ?? [];
+    final updated = [...existing, _currentStroke!];
+    _currentStroke = null;
+    state = state.copyWith(
+      drawingsPerPage: {...state.drawingsPerPage, page: updated},
+      currentPoints: [],
+    );
+  }
 
-        final recorder = PictureRecorder();
-        final canvas = Canvas(recorder);
-        final paint = Paint();
-        final uiImage = await decodeImageFromList(image!.bytes);
-        canvas.drawImage(uiImage, Offset.zero, paint);
+  /// Export the annotated PDF by scaling widget-space annotations into image-space.
+  /// [displaySize] is the logical size (width x height) of the PDF widget.
+  Future<String> saveAnnotatedPdf({required Size displaySize}) async {
+    saveCurrentStroke();
+    final pdf = pw.Document();
+    for (int i = 1; i <= state.totalPages; i++) {
+      final page = await state.document!.getPage(i);
+      final pageImage = await page.render(
+        width: page.width,
+        height: page.height,
+        format: pdfx.PdfPageImageFormat.png,
+      );
+      await page.close();
+      final recorder = PictureRecorder();
+      final canvas = Canvas(recorder);
+      final uiImage = await decodeImageFromList(pageImage!.bytes);
+      canvas.drawImage(uiImage, Offset.zero, Paint());
 
-        for (final stroke in state.drawingsPerPage[i]!) {
-          final paint =
-              Paint()
-                ..color = stroke.color
-                ..strokeWidth = stroke.strokeWidth
-                ..strokeCap = StrokeCap.round;
-          for (int j = 0; j < stroke.points.length - 1; j++) {
-            if (stroke.points[j] != null && stroke.points[j + 1] != null) {
-              canvas.drawLine(stroke.points[j]!, stroke.points[j + 1]!, paint);
-            }
-          }
+      final sx = pageImage.width! / displaySize.width;
+      final sy = pageImage.height! / displaySize.height;
+
+      // Draw strokes
+      for (final stroke in state.drawingsPerPage[i] ?? []) {
+        final paint =
+            Paint()
+              ..color = stroke.color
+              ..strokeWidth = stroke.strokeWidth
+              ..strokeCap = StrokeCap.round;
+        for (int j = 0; j < stroke.points.length - 1; j++) {
+          final o1 = stroke.points[j];
+          final o2 = stroke.points[j + 1];
+          canvas.drawLine(
+            Offset(o1.dx * sx, o1.dy * sy),
+            Offset(o2.dx * sx, o2.dy * sy),
+            paint,
+          );
         }
-
-        for (final text in state.textPerPage[i]!) {
-          final scaledFontSize = text.fontSize * state.scaleFactor;
-          final scaledOffset = Offset(
-            text.position.dx * state.scaleFactor,
-            text.position.dy * state.scaleFactor,
-          );
-          final textPainter = TextPainter(
-            text: TextSpan(
-              text: text.text,
-              style: TextStyle(fontSize: scaledFontSize, color: text.color),
-            ),
-            textDirection: TextDirection.ltr,
-          );
-          textPainter.layout();
-          textPainter.paint(canvas, scaledOffset);
-        }
-
-        for (final shape in state.shapePerPage?[i] ?? []) {
-          final paint =
-              Paint()
-                ..color = shape.color
-                ..style = PaintingStyle.stroke
-                ..strokeWidth = 3;
-
-          final rect = Rect.fromLTWH(
-            shape.position.dx * state.scaleFactor,
-            shape.position.dy * state.scaleFactor,
-            shape.size.width * state.scaleFactor,
-            shape.size.height * state.scaleFactor,
-          );
-
-          switch (shape.type) {
-            case ShapeType.circle:
-              canvas.drawOval(rect, paint);
-              break;
-            case ShapeType.rectangle:
-              canvas.drawRect(rect, paint);
-              break;
-            case ShapeType.line:
-              canvas.drawLine(
-                Offset(rect.left, rect.bottom),
-                Offset(rect.right, rect.top),
-                paint,
-              );
-              break;
-            default:
-              break;
-          }
-        }
-
-        const double iconSize = 24;
-        const double iconRadius = iconSize / 2;
-        for (final comment in state.commentsPerPage[i] ?? []) {
-          final offset = comment.position; // Already in PDF coordinates
-          final centeredOffset = offset - Offset(iconRadius, iconRadius);
-          canvas.drawCircle(
-            centeredOffset + Offset(iconRadius, iconRadius),
-            iconRadius,
-            Paint()..color = Colors.orange,
-          );
-
-          final textPainter = TextPainter(
-            text: TextSpan(
-              text: comment.comment,
-              style: TextStyle(fontSize: 16, color: Colors.black),
-            ),
-            textDirection: TextDirection.ltr,
-          );
-          textPainter.layout();
-          textPainter.paint(canvas, centeredOffset + Offset(iconSize + 2, -8));
-        }
-
-        final pic = recorder.endRecording();
-        final annotatedImage = await pic.toImage(image.width!, image.height!);
-        final pngBytes = await annotatedImage.toByteData(
-          format: ImageByteFormat.png,
-        );
-
-        final memImage = pw.MemoryImage(pngBytes!.buffer.asUint8List());
-        pdf.addPage(
-          pw.Page(
-            pageFormat: PdfPageFormat(
-              image.width!.toDouble(),
-              image.height!.toDouble(),
-            ),
-            margin: pw.EdgeInsets.zero,
-            build: (context) => pw.Image(memImage, fit: pw.BoxFit.cover),
-          ),
-        );
       }
 
-      return await savePdfFile(await pdf.save());
-    });
+      // Draw comments
+      for (final c in state.commentsPerPage[i] ?? []) {
+        final cx = c.position.dx * sx, cy = c.position.dy * sy;
+        canvas.drawCircle(Offset(cx, cy), 12, Paint()..color = Colors.orange);
+        final tp = TextPainter(
+          text: TextSpan(
+            text: c.comment,
+            style: const TextStyle(fontSize: 16, color: Colors.black),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        tp.paint(canvas, Offset(cx + 26, cy - 8));
+      }
+
+      // 2) Draw text annotations
+      for (final txt in state.textPerPage[i] ?? []) {
+        final textPainter = TextPainter(
+          text: TextSpan(
+            text: txt.text,
+            style: TextStyle(fontSize: txt.fontSize * sx, color: txt.color),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        final dx = txt.position.dx * sx;
+        final dy = txt.position.dy * sy;
+        textPainter.paint(canvas, Offset(dx, dy));
+      }
+
+      // 3) Draw shapes
+      for (final shape in state.shapePerPage?[i] ?? []) {
+        final shapePaint =
+            Paint()
+              ..color = shape.color
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 3 * ((sx + sy) / 2);
+        final rect = Rect.fromLTWH(
+          shape.position.dx * sx,
+          shape.position.dy * sy,
+          shape.size.width * sx,
+          shape.size.height * sy,
+        );
+        switch (shape.type) {
+          case ShapeType.circle:
+            canvas.drawOval(rect, shapePaint);
+            break;
+          case ShapeType.rectangle:
+            canvas.drawRect(rect, shapePaint);
+            break;
+          case ShapeType.line:
+            canvas.drawLine(
+              Offset(rect.left, rect.bottom),
+              Offset(rect.right, rect.top),
+              shapePaint,
+            );
+            break;
+        }
+      }
+
+      // Finalize PDF page
+      final pic = recorder.endRecording();
+      final img = await pic.toImage(pageImage.width!, pageImage.height!);
+      final bytes = await img.toByteData(format: ImageByteFormat.png);
+      final mem = pw.MemoryImage(bytes!.buffer.asUint8List());
+
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat(
+            pageImage.width!.toDouble(),
+            pageImage.height!.toDouble(),
+          ),
+          margin: pw.EdgeInsets.zero,
+          build: (_) => pw.Image(mem, fit: pw.BoxFit.cover),
+        ),
+      );
+    }
+    return await savePdfFile(await pdf.save());
   }
 
   Future<String> savePdfFile(Uint8List pdfBytes) async {
@@ -363,15 +353,15 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
   }
 
   void addCommentAnnotation(String comment, Offset position) {
-    List<CommentAnnotation> updated = [
-      ...state.commentsPerPage[state.currentPage] ?? [],
+    final page = state.currentPage;
+    final existing = state.commentsPerPage[page] ?? [];
+    final updated = [
+      ...existing,
       CommentAnnotation(comment: comment, position: position),
     ];
-    Map<int, List<CommentAnnotation>>? updatedMap = {
-      ...state.commentsPerPage,
-      state.currentPage: updated,
-    };
-    state = state.copyWith(commentsPerPage: updatedMap);
+    state = state.copyWith(
+      commentsPerPage: {...state.commentsPerPage, page: updated},
+    );
   }
 
   void deleteCommentAnnotation(CommentAnnotation annotation) {
