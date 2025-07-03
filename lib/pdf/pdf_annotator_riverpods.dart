@@ -220,17 +220,26 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
       }
 
       // Draw comments
-      for (final c in state.commentsPerPage[i] ?? []) {
-        final cx = c.position.dx * sx, cy = c.position.dy * sy;
-        canvas.drawCircle(Offset(cx, cy), 12, Paint()..color = Colors.orange);
-        final tp = TextPainter(
+      for (final comment in state.commentsPerPage[i] ?? []) {
+        final iconSize = 24.0;
+        final iconRadius = iconSize / 2;
+        final offset = comment.position; // already PDF space!
+        final centeredOffset = offset - Offset(iconRadius, iconRadius);
+        canvas.drawCircle(
+          centeredOffset + Offset(iconRadius, iconRadius),
+          iconRadius,
+          Paint()..color = Colors.orange,
+        );
+        // Draw the comment text (optional)
+        final textPainter = TextPainter(
           text: TextSpan(
-            text: c.comment,
-            style: const TextStyle(fontSize: 16, color: Colors.black),
+            text: comment.comment,
+            style: TextStyle(fontSize: 16, color: Colors.black),
           ),
           textDirection: TextDirection.ltr,
-        )..layout();
-        tp.paint(canvas, Offset(cx + 26, cy - 8));
+        );
+        textPainter.layout();
+        textPainter.paint(canvas, centeredOffset + Offset(iconSize + 2, -8));
       }
 
       // 2) Draw text annotations

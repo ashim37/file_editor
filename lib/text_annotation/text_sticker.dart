@@ -50,45 +50,48 @@ class _TextStickerState extends State<TextSticker> {
         },
         onScaleUpdate: (details) {
           setState(() {
-            // move
-            final delta =
-                details.focalPoint - (startFocalPoint ?? details.focalPoint);
+            final delta = details.focalPoint - (startFocalPoint ?? details.focalPoint);
             position = (startPosition ?? position) + delta;
-
-            // scale
             fontSize = (startFontSize! * details.scale).clamp(10.0, 100.0);
           });
-
           widget.onChanged?.call(position, fontSize);
         },
-        child: Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.center,
-          children: [
-            Text(
-              widget.text,
-              style: TextStyle(
-                fontSize: fontSize,
-                color: widget.color,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Positioned(
-              top: -22,
-              right: -26,
-              child: IconButton(
-                onPressed: () {
-                  widget.onDelete?.call();
-                },
-                icon: const CircleAvatar(
-                  radius: 10,
-                  backgroundColor: Colors.red,
-                  child: Icon(Icons.close, size: 10, color: Colors.white),
+        child: Material(
+          color: Colors.white.withValues(alpha: 0.85),
+          elevation: 6,
+          shadowColor: Colors.black.withValues(alpha: 0.17),
+          borderRadius: BorderRadius.circular(10),
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                child: Text(
+                  widget.text,
+                  style: TextStyle(
+                    fontSize: fontSize,
+                    color: widget.color,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-            ),
-
-          ],
+              Positioned(
+                top: -20,
+                right: -22,
+                child: IconButton(
+                  onPressed: widget.onDelete,
+                  icon: const CircleAvatar(
+                    radius: 10,
+                    backgroundColor: Colors.red,
+                    child: Icon(Icons.close, size: 13, color: Colors.white),
+                  ),
+                  splashRadius: 16,
+                  tooltip: 'Delete text',
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

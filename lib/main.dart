@@ -1,6 +1,5 @@
 import 'package:file_editor/image/image_annotator.dart';
 import 'package:file_editor/pdf/pdf_annotator.dart';
-import 'package:file_editor/pdf_webview_page.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -78,24 +77,6 @@ class _MyAppState extends State<MyApp> {
               color: Colors.black,
               child: const Text(
                 "Pick PDF",
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-            MaterialButton(
-              height: 40,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) {
-                      return const PDFAnnotatorWebView();
-                    },
-                  ),
-                );
-              },
-              color: Colors.black,
-              child: const Text(
-                "Pick PDF using WebView",
                 style: TextStyle(color: Colors.white),
               ),
             ),

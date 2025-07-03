@@ -23,13 +23,11 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
   int? _lastPageForScale;
 
   TransformationController? tranformationController;
-
   late pdfx.PdfPageImage image;
 
   @override
   void initState() {
     super.initState();
-
     Future(() {
       ref.read(pdfEditorProvider.notifier).loadPDF(widget.filePath ?? "");
     });
@@ -39,86 +37,148 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
   Widget build(BuildContext context) {
     tranformationController ??=
         ref.watch(pdfEditorProvider.notifier).getTransformationController;
-    final currentPage = ref.watch(
-      pdfEditorProvider.select((s) => s.currentPage),
-    );
+    final _ = ref.watch(pdfEditorProvider.select((s) => s.currentPage));
     final totalPages = ref.watch(pdfEditorProvider.select((s) => s.totalPages));
 
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: const Text('PDF Annotator'),
+        title: const Text(
+          'PDF Annotator',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 2,
         actions: [
-          Consumer(
-            builder: (context, ref, _) {
-              final penColor = ref.watch(
-                pdfEditorProvider.select((s) => s.penColor),
-              );
-              return DropdownButton<Color>(
-                value: penColor,
-                onChanged: (color) {
-                  if (color != null) {
-                    ref.read(pdfEditorProvider.notifier).setPenColor(color);
-                  }
-                },
-                items:
-                    [
-                          Colors.red,
-                          Colors.blue,
-                          Colors.green,
-                          Colors.black,
-                          Colors.yellow,
-                        ]
-                        .map(
-                          (color) => DropdownMenuItem(
-                            value: color,
-                            child: Container(
-                              width: 24,
-                              height: 24,
-                              color: color,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Row(
+              children: [
+                // Pen color dropdown
+                Tooltip(
+                  message: "Pen Color",
+                  child: Consumer(
+                    builder: (context, ref, _) {
+                      final penColor = ref.watch(
+                        pdfEditorProvider.select((s) => s.penColor),
+                      );
+                      return DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<Color>(
+                              value: penColor,
+                              icon: const Icon(Icons.arrow_drop_down, size: 22),
+                              onChanged: (color) {
+                                if (color != null) {
+                                  ref
+                                      .read(pdfEditorProvider.notifier)
+                                      .setPenColor(color);
+                                }
+                              },
+                              items:
+                                  [
+                                        Colors.red,
+                                        Colors.blue,
+                                        Colors.green,
+                                        Colors.black,
+                                        Colors.yellow,
+                                      ]
+                                      .map(
+                                        (color) => DropdownMenuItem(
+                                          value: color,
+                                          child: Container(
+                                            width: 22,
+                                            height: 22,
+                                            decoration: BoxDecoration(
+                                              color: color,
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: Colors.grey.shade400,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
                             ),
                           ),
-                        )
-                        .toList(),
-              );
-            },
-          ),
-          Consumer(
-            builder: (context, ref, _) {
-              final addTagMode = ref.watch(
-                pdfEditorProvider.select((s) => s.addTagMode),
-              );
-              return IconButton(
-                icon: Icon(
-                  Icons.add_comment,
-                  color: addTagMode ? Colors.orange : null,
+                        ),
+                      );
+                    },
+                  ),
                 ),
-                onPressed: () {
-                  ref.read(pdfEditorProvider.notifier).setToggle(!addTagMode);
-                },
-              );
-            },
-          ),
-          IconButton(icon: const Icon(Icons.save), onPressed: savePdf),
-
-          Consumer(
-            builder: (context, ref, _) {
-              final drawingEnabled = ref.watch(
-                pdfEditorProvider.select((s) => s.drawingEnabled),
-              );
-              return PopupMenuButton<ShapeType>(
-                onSelected: (value) {
-                  if (value == ShapeType.text) {
-                    showTextDialog();
-                  } else if (value == ShapeType.drawing) {
-                    ref.read(pdfEditorProvider.notifier).setDrawingEnabled();
-                  } else {
-                    ref.read(pdfEditorProvider.notifier).addShape(value);
-                  }
-                },
-                itemBuilder:
-                    (context) => getPopUpItems(context, drawingEnabled),
-              );
-            },
+                Tooltip(
+                  message: "Add Comment",
+                  child: Consumer(
+                    builder: (context, ref, _) {
+                      final addTagMode = ref.watch(
+                        pdfEditorProvider.select((s) => s.addTagMode),
+                      );
+                      return IconButton(
+                        icon: Icon(
+                          Icons.add_comment,
+                          color: addTagMode ? Colors.orange : Colors.grey[800],
+                        ),
+                        onPressed: () {
+                          ref
+                              .read(pdfEditorProvider.notifier)
+                              .setToggle(!addTagMode);
+                        },
+                      );
+                    },
+                  ),
+                ),
+                Consumer(
+                  builder: (context, ref, _) {
+                    final drawingEnabled = ref.watch(
+                      pdfEditorProvider.select((s) => s.drawingEnabled),
+                    );
+                    return Tooltip(
+                      message: "Draw/Shapes/Text",
+                      child: PopupMenuButton<ShapeType>(
+                        onSelected: (value) {
+                          if (value == ShapeType.text) {
+                            showTextDialog();
+                          } else if (value == ShapeType.drawing) {
+                            ref
+                                .read(pdfEditorProvider.notifier)
+                                .setDrawingEnabled();
+                          } else {
+                            ref
+                                .read(pdfEditorProvider.notifier)
+                                .addShape(value);
+                          }
+                        },
+                        icon: Icon(
+                          Icons.edit,
+                          color:
+                              drawingEnabled ? Colors.blue : Colors.grey[800],
+                        ),
+                        itemBuilder:
+                            (context) => getPopUpItems(context, drawingEnabled),
+                      ),
+                    );
+                  },
+                ),
+                Tooltip(
+                  message: "Save Annotated PDF",
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.save_alt_rounded,
+                      color: Colors.deepPurple,
+                    ),
+                    onPressed: savePdf,
+                  ),
+                ),
+                const SizedBox(width: 4),
+              ],
+            ),
           ),
         ],
       ),
@@ -156,7 +216,6 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
               final ratio = image.width! / image.height!;
               final displayWidth = MediaQuery.of(context).size.width;
               final displayHeight = displayWidth / ratio;
-              //final scale = image.width! / displayWidth;
               final double scale =
                   tranformationController?.value.getMaxScaleOnAxis() ?? 1.0;
               if (_lastScaleFactor != scale ||
@@ -171,247 +230,333 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
               final drawingEnabled = ref.watch(
                 pdfEditorProvider.select((s) => s.drawingEnabled),
               );
-              return Container(
-                color: Colors.white,
-                width: displayWidth,
-                height: displayHeight,
-                child: InteractiveViewer(
-                  transformationController: tranformationController,
-                  child: GestureDetector(
-                    // inside your GestureDetector:
-                    onPanStart:
-                        drawingEnabled
-                            ? (details) {
-                              final box =
-                                  context.findRenderObject() as RenderBox;
-                              ref
-                                  .read(pdfEditorProvider.notifier)
-                                  .onPanStart(details, box);
-                            }
-                            : null,
 
-                    onPanUpdate:
-                        drawingEnabled
-                            ? (details) {
-                              final box =
-                                  context.findRenderObject() as RenderBox;
-                              ref
-                                  .read(pdfEditorProvider.notifier)
-                                  .onPanUpdate(details, box);
-                            }
-                            : null,
-
-                    onPanEnd:
-                        drawingEnabled
-                            ? (_) {
-                              ref
-                                  .read(pdfEditorProvider.notifier)
-                                  .saveCurrentStroke();
-                            }
-                            : null,
-
-                    onTapDown: (details) async {
-                      onTapDown(
-                        details,
-                        context,
-                        ref,
-                        displayWidth,
-                        displayHeight,
-                      );
-                    },
-                    child: Stack(
-                      children: [
-                        // In your Stack, overlay comment icons:
-                        Image.memory(image.bytes, fit: BoxFit.fill),
-
-                        Consumer(
-                          builder: (context, ref, _) {
-                            final strokes = ref.watch(
-                              pdfEditorProvider.select(
-                                (s) => s.drawingsPerPage[currentPage] ?? [],
-                              ),
-                            );
-                            final currentPoints = ref.watch(
-                              pdfEditorProvider.select((s) => s.currentPoints),
-                            );
-                            final penColor = ref.watch(
-                              pdfEditorProvider.select((s) => s.penColor),
-                            );
-                            final strokeWidth = ref.watch(
-                              pdfEditorProvider.select((s) => s.strokeWidth),
-                            );
-                            /*final scaleFactor = ref.watch(
-                              pdfEditorProvider.select((s) => s.scaleFactor),
-                            );*/
-                            return CustomPaint(
-                              painter: _PdfDrawingPainter(
-                                strokes,
-                                currentPoints,
-                                penColor,
-                                strokeWidth,
-                              ),
-                              size: Size(displayWidth, displayHeight),
+              return Stack(
+                children: [
+                  Center(
+                    child: Container(
+                      margin: EdgeInsets.only(bottom: 100),
+                      color: Colors.white,
+                      width: displayWidth,
+                      height: displayHeight,
+                      child: InteractiveViewer(
+                        transformationController: tranformationController,
+                        minScale: 1,
+                        maxScale: 6,
+                        panEnabled: true,
+                        child: GestureDetector(
+                          onPanStart:
+                              drawingEnabled
+                                  ? (details) {
+                                    final box =
+                                        context.findRenderObject() as RenderBox;
+                                    ref
+                                        .read(pdfEditorProvider.notifier)
+                                        .onPanStart(details, box);
+                                  }
+                                  : null,
+                          onPanUpdate:
+                              drawingEnabled
+                                  ? (details) {
+                                    final box =
+                                        context.findRenderObject() as RenderBox;
+                                    ref
+                                        .read(pdfEditorProvider.notifier)
+                                        .onPanUpdate(details, box);
+                                  }
+                                  : null,
+                          onPanEnd:
+                              drawingEnabled
+                                  ? (_) {
+                                    ref
+                                        .read(pdfEditorProvider.notifier)
+                                        .saveCurrentStroke();
+                                  }
+                                  : null,
+                          onTapDown: (details) async {
+                            onTapDown(
+                              details,
+                              context,
+                              ref,
+                              displayWidth,
+                              displayHeight,
                             );
                           },
-                        ),
-
-                        Consumer(
-                          builder: (context, ref, _) {
-                            final texts = ref.watch(
-                              pdfEditorProvider.select(
-                                (s) => s.textPerPage[currentPage] ?? [],
+                          child: Stack(
+                            children: [
+                              // PDF Page Image
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Image.memory(
+                                  image.bytes,
+                                  fit: BoxFit.fill,
+                                ),
                               ),
-                            );
-
-                            return Stack(
-                              children:
-                                  texts.map((annotation) {
-                                    final _ = Offset(
-                                      displayWidth / 2,
-                                      displayHeight / 2,
-                                    );
-
-                                    return TextSticker(
-                                      key: ValueKey(annotation),
-                                      text: annotation.text,
-                                      color: annotation.color,
-                                      initialFontSize: annotation.fontSize,
-                                      initialPosition: annotation.position,
-                                      onChanged: (pos, size) {
-                                        annotation.position = pos;
-                                        annotation.fontSize = size;
-                                      },
-                                      onDelete: () {
-                                        ref
-                                            .read(pdfEditorProvider.notifier)
-                                            .deleteText(annotation);
-                                      },
-                                    );
-                                  }).toList(),
-                            );
-                          },
-                        ),
-
-                        Consumer(
-                          builder: (context, ref, _) {
-                            final comments = ref.watch(
-                              pdfEditorProvider.select(
-                                (s) => s.commentsPerPage[currentPage] ?? [],
+                              // Drawing Layer
+                              Consumer(
+                                builder: (context, ref, _) {
+                                  final strokes = ref.watch(
+                                    pdfEditorProvider.select(
+                                      (s) =>
+                                          s.drawingsPerPage[currentPage] ?? [],
+                                    ),
+                                  );
+                                  final currentPoints = ref.watch(
+                                    pdfEditorProvider.select(
+                                      (s) => s.currentPoints,
+                                    ),
+                                  );
+                                  final penColor = ref.watch(
+                                    pdfEditorProvider.select((s) => s.penColor),
+                                  );
+                                  final strokeWidth = ref.watch(
+                                    pdfEditorProvider.select(
+                                      (s) => s.strokeWidth,
+                                    ),
+                                  );
+                                  return CustomPaint(
+                                    painter: _PdfDrawingPainter(
+                                      strokes,
+                                      currentPoints,
+                                      penColor,
+                                      strokeWidth,
+                                    ),
+                                    size: Size(displayWidth, displayHeight),
+                                  );
+                                },
                               ),
-                            );
-                            final pdfPageSize = ref.watch(
-                              pdfEditorProvider.select((s) => s.pdfPageSize),
-                            );
-                            return Stack(
-                              children:
-                                  comments.map((annotation) {
-                                    const iconSize = 24.0;
-                                    // inverse of sx,sy: image-space → widget-space
-                                    final scaleX =
-                                        displayWidth / pdfPageSize.width;
-                                    final scaleY =
-                                        displayHeight / pdfPageSize.height;
-                                    final widgetPos = Offset(
-                                      annotation.position.dx * scaleX,
-                                      annotation.position.dy * scaleY,
-                                    );
-                                    return Positioned(
-                                      left: widgetPos.dx - iconSize,
-                                      top: widgetPos.dy - iconSize,
-                                      child: IconButton(
-                                        icon: Icon(
-                                          Icons.comment,
-                                          size: iconSize,
-                                        ),
-                                        color: Colors.orange,
-                                        onPressed: () {
-                                          showCommentDialog(
-                                            context,
-                                            annotation,
+                              // Text overlays (with slight shadow for UX)
+                              Consumer(
+                                builder: (context, ref, _) {
+                                  final texts = ref.watch(
+                                    pdfEditorProvider.select(
+                                      (s) => s.textPerPage[currentPage] ?? [],
+                                    ),
+                                  );
+                                  return Stack(
+                                    children:
+                                        texts.map((annotation) {
+                                          return TextSticker(
+                                            key: ValueKey(annotation),
+                                            text: annotation.text,
+                                            color: annotation.color,
+                                            initialFontSize:
+                                                annotation.fontSize,
+                                            initialPosition:
+                                                annotation.position,
+                                            onChanged: (pos, size) {
+                                              annotation.position = pos;
+                                              annotation.fontSize = size;
+                                            },
+                                            onDelete: () {
+                                              ref
+                                                  .read(
+                                                    pdfEditorProvider.notifier,
+                                                  )
+                                                  .deleteText(annotation);
+                                            },
                                           );
-                                        },
-                                      ),
-                                    );
-                                  }).toList(),
-                            );
-                          },
-                        ),
-
-                        Consumer(
-                          builder: (context, ref, _) {
-                            final shapes = ref.watch(
-                              pdfEditorProvider.select(
-                                (s) => s.shapePerPage?[currentPage] ?? [],
+                                        }).toList(),
+                                  );
+                                },
                               ),
-                            );
+                              // Comments (modern floating style)
+                              // ... other Consumer builders (drawings, text, etc.)
+                              Consumer(
+                                builder: (context, ref, _) {
+                                  final comments = ref.watch(
+                                    pdfEditorProvider.select(
+                                      (s) =>
+                                          s.commentsPerPage[currentPage] ?? [],
+                                    ),
+                                  );
+                                  final pdfPageSize = ref.watch(
+                                    pdfEditorProvider.select(
+                                      (s) => s.pdfPageSize,
+                                    ),
+                                  );
+                                  return Stack(
+                                    children:
+                                        comments.asMap().entries.map((entry) {
+                                          final _ = entry.key;
+                                          final annotation = entry.value;
+                                          const iconSize = 30.0;
+                                          final scaleX =
+                                              displayWidth / pdfPageSize.width;
+                                          final scaleY =
+                                              displayHeight /
+                                              pdfPageSize.height;
+                                          final widgetPos = Offset(
+                                            annotation.position.dx * scaleX,
+                                            annotation.position.dy * scaleY,
+                                          );
+                                          return Positioned(
+                                            left: widgetPos.dx - iconSize,
+                                            top: widgetPos.dy - iconSize,
+                                            child: Stack(
+                                              children: [
+                                                IconButton(
+                                                  icon: const Icon(
+                                                    Icons.comment,
+                                                    size: iconSize,
+                                                  ),
+                                                  color: Colors.orange[800],
+                                                  splashRadius: 20,
+                                                  tooltip: annotation.comment,
+                                                  onPressed:
+                                                      () => showCommentDialog(
+                                                        context,
+                                                        annotation,
+                                                      ),
+                                                ),
+                                                Positioned(
+                                                  top: -15,
+                                                  right: -15,
+                                                  child: IconButton(
+                                                    icon: const Icon(
+                                                      Icons.cancel_outlined,
+                                                      color: Colors.red,
+                                                      size: 20,
+                                                    ),
+                                                    splashRadius: 18,
+                                                    tooltip: 'Delete comment',
+                                                    onPressed: () {
+                                                      ref
+                                                          .read(
+                                                            pdfEditorProvider
+                                                                .notifier,
+                                                          )
+                                                          .deleteCommentAnnotation(
+                                                            annotation,
+                                                          );
+                                                    },
+                                                  ),
+                                                ),
 
-                            return Stack(
-                              children:
-                                  shapes.asMap().entries.map((entry) {
-                                    final idx = entry.key;
-                                    final shape = entry.value;
-                                    return DraggableResizableShape(
-                                      key: ValueKey(shape),
-                                      shape: shape,
-                                      color: shape.color,
-                                      onUpdate: (pos, size) {
-                                        shape.position = pos;
-                                        shape.size = size;
-                                      },
-                                      onDelete: () {
-                                        ref
-                                            .read(pdfEditorProvider.notifier)
-                                            .deleteShape(idx);
-                                      },
-                                    );
-                                  }).toList(),
-                            );
-                          },
+                                                // Delete button for comment
+                                              ],
+                                            ),
+                                          );
+                                        }).toList(),
+                                  );
+                                },
+                              ),
+                              // Shapes
+                              Consumer(
+                                builder: (context, ref, _) {
+                                  final shapes = ref.watch(
+                                    pdfEditorProvider.select(
+                                      (s) => s.shapePerPage?[currentPage] ?? [],
+                                    ),
+                                  );
+                                  return Stack(
+                                    children:
+                                        shapes.asMap().entries.map((entry) {
+                                          final idx = entry.key;
+                                          final shape = entry.value;
+                                          return DraggableResizableShape(
+                                            key: ValueKey(shape),
+                                            shape: shape,
+                                            color: shape.color,
+                                            onUpdate: (pos, size) {
+                                              shape.position = pos;
+                                              shape.size = size;
+                                            },
+                                            onDelete: () {
+                                              ref
+                                                  .read(
+                                                    pdfEditorProvider.notifier,
+                                                  )
+                                                  .deleteShape(idx);
+                                            },
+                                          );
+                                        }).toList(),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
+                  // Floating page controls
+                  Positioned(
+                    bottom: 60,
+                    right: 50,
+                    child: Card(
+                      color: Colors.white.withValues(alpha: 0.98),
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              tooltip: "Previous Page",
+                              onPressed:
+                                  currentPage > 1
+                                      ? () => ref
+                                          .read(pdfEditorProvider.notifier)
+                                          .goToPage(currentPage - 1)
+                                      : null,
+                              icon: const Icon(Icons.chevron_left, size: 28),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
+                              child: Text(
+                                'Page $currentPage / $totalPages',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: "Next Page",
+                              onPressed:
+                                  currentPage < totalPages
+                                      ? () => ref
+                                          .read(pdfEditorProvider.notifier)
+                                          .goToPage(currentPage + 1)
+                                      : null,
+                              icon: const Icon(Icons.chevron_right, size: 28),
+                            ),
+                            IconButton(
+                              tooltip: "Undo",
+                              onPressed:
+                                  () =>
+                                      ref
+                                          .read(pdfEditorProvider.notifier)
+                                          .undoDrawing(),
+                              icon: const Icon(Icons.undo, size: 22),
+                            ),
+                            IconButton(
+                              tooltip: "Redo",
+                              onPressed:
+                                  () =>
+                                      ref
+                                          .read(pdfEditorProvider.notifier)
+                                          .redoDrawing(),
+                              icon: const Icon(Icons.redo, size: 22),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               );
             },
           );
         },
-      ),
-      bottomNavigationBar: BottomAppBar(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            IconButton(
-              onPressed:
-                  currentPage > 1
-                      ? () => ref
-                          .read(pdfEditorProvider.notifier)
-                          .goToPage(currentPage - 1)
-                      : null,
-              icon: const Icon(Icons.arrow_back),
-            ),
-            Text('Page $currentPage / $totalPages'),
-            IconButton(
-              onPressed:
-                  currentPage < totalPages
-                      ? () => ref
-                          .read(pdfEditorProvider.notifier)
-                          .goToPage(currentPage + 1)
-                      : null,
-              icon: const Icon(Icons.arrow_forward),
-            ),
-            IconButton(
-              icon: const Icon(Icons.undo_outlined),
-              onPressed:
-                  () => ref.read(pdfEditorProvider.notifier).undoDrawing(),
-            ),
-            IconButton(
-              icon: const Icon(Icons.redo_outlined),
-              onPressed:
-                  () => ref.read(pdfEditorProvider.notifier).redoDrawing(),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -481,7 +626,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
           action: SnackBarAction(
             label: 'Open',
             onPressed: () {
-              openFile(path); // Implement this function to open the file
+              openFile(path);
             },
           ),
         ),
@@ -541,22 +686,14 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
     final addTagMode = ref.watch(pdfEditorProvider.select((s) => s.addTagMode));
     if (!addTagMode) return;
 
-    // 1️⃣ Get the raw tap position inside your PDF widget:
     final local = details.localPosition;
-
-    // 2️⃣ Pull in the PDF page’s actual size (in pixels):
     final pdfPageSize = ref.read(
       pdfEditorProvider.select((s) => s.pdfPageSize),
     );
-
-    // 3️⃣ Compute the scale factors from widget → PDF image:
     final sx = pdfPageSize.width / displayWidth;
     final sy = pdfPageSize.height / displayHeight;
-
-    // 4️⃣ Convert the tap to PDF‐space so it will export in the right spot:
     final pdfPos = Offset(local.dx * sx, local.dy * sy);
 
-    // 5️⃣ Ask the user for their comment text:
     final comment = await showDialog<String>(
       context: context,
       builder: (_) {
@@ -573,23 +710,15 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
         );
       },
     );
-
-    // 6️⃣ Store it in PDF‐space
     if (comment != null && comment.trim().isNotEmpty) {
       ref
           .read(pdfEditorProvider.notifier)
           .addCommentAnnotation(comment.trim(), pdfPos);
     }
-
-    // 7️⃣ Turn off comment‐mode
     ref.read(pdfEditorProvider.notifier).setToggle(false);
   }
 }
 
-/// Custom painter that draws strokes in display-space; InteractiveViewer handles zoom.
-
-/// Custom painter that draws strokes in widget-space;
-/// InteractiveViewer handles zoom and pan.
 class _PdfDrawingPainter extends CustomPainter {
   final List<StrokeSegment> strokes;
   final List<Offset?> current;
@@ -607,7 +736,6 @@ class _PdfDrawingPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..strokeCap = StrokeCap.round;
 
-    // Draw completed strokes
     for (final stroke in strokes) {
       paint
         ..color = stroke.color
@@ -616,8 +744,6 @@ class _PdfDrawingPainter extends CustomPainter {
         canvas.drawLine(stroke.points[i]!, stroke.points[i + 1]!, paint);
       }
     }
-
-    // Draw in-progress stroke
     paint
       ..color = currentColor
       ..strokeWidth = currentWidth;
