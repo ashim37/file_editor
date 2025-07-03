@@ -1,5 +1,5 @@
 import 'package:file_editor/shape/shape.dart';
-import 'package:file_editor/shape_type.dart';
+import 'package:file_editor/utils/shape_type.dart';
 import 'package:flutter/material.dart';
 
 class DraggableResizableShape extends StatefulWidget {
@@ -99,7 +99,11 @@ class _DraggableResizableShapeState extends State<DraggableResizableShape> {
                       child: InkResponse(
                         onTap: widget.onDelete,
                         radius: 18,
-                        child: const Icon(Icons.close, color: Colors.red, size: 30),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.red,
+                          size: 30,
+                        ),
                       ),
                     ),
                   ),
@@ -325,6 +329,7 @@ class _ShapePainter extends CustomPainter {
           ..color = color
           ..style = PaintingStyle.stroke
           ..strokeWidth = 3;
+
     switch (type) {
       case ShapeType.circle:
         canvas.drawOval(Offset.zero & size, paint);
@@ -335,9 +340,46 @@ class _ShapePainter extends CustomPainter {
       case ShapeType.line:
         canvas.drawLine(Offset(0, size.height), Offset(size.width, 0), paint);
         break;
+      case ShapeType.arrow:
+        _drawArrow(canvas, size, paint);
+        break;
+      case ShapeType.ellipse:
+        canvas.drawOval(Offset.zero & size, paint);
+        break;
+      case ShapeType.triangle:
+        _drawTriangle(canvas, size, paint);
+        break;
+      // ...add more
       default:
         break;
     }
+  }
+
+  void _drawArrow(Canvas canvas, Size size, Paint paint) {
+    // Draw line
+    canvas.drawLine(
+      Offset(0, size.height / 2),
+      Offset(size.width, size.height / 2),
+      paint,
+    );
+
+    // Draw arrow head
+    final arrowSize = 16.0;
+    final path = Path();
+    path.moveTo(size.width, size.height / 2);
+    path.lineTo(size.width - arrowSize, size.height / 2 - arrowSize / 2);
+    path.moveTo(size.width, size.height / 2);
+    path.lineTo(size.width - arrowSize, size.height / 2 + arrowSize / 2);
+    canvas.drawPath(path, paint);
+  }
+
+  void _drawTriangle(Canvas canvas, Size size, Paint paint) {
+    final path = Path();
+    path.moveTo(size.width / 2, 0);
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+    canvas.drawPath(path, paint);
   }
 
   @override

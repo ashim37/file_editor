@@ -1,12 +1,13 @@
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui';
 import 'package:file_editor/pdf/pdf_annotator_state.dart';
 import 'package:file_editor/shape/shape.dart';
-import 'package:file_editor/shape_type.dart';
+import 'package:file_editor/utils/shape_type.dart';
+import 'package:file_editor/utils/storage_directory_path.dart';
 import 'package:file_editor/text_annotation/text_annotation.dart';
-import 'package:file_editor/permission_request_handler.dart';
-import 'package:file_editor/storage_directory_path.dart';
+import 'package:file_editor/utils/permission_request_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf/pdf.dart';
@@ -37,7 +38,8 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
         ),
       );
 
-  TransformationController get getTransformationController => state.transformationController;
+  TransformationController get getTransformationController =>
+      state.transformationController;
   StrokeSegment? _currentStroke;
 
   Future<void> loadPDF(String filePath) async {
@@ -283,6 +285,14 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
               shapePaint,
             );
             break;
+          case ShapeType.arrow:
+            _drawArrowOnPdfCanvas(canvas, rect, shapePaint);
+            break;
+          case ShapeType.triangle:
+            _drawTriangleOnPdfCanvas(canvas, rect, shapePaint);
+            break;
+          default:
+            break;
         }
       }
 
@@ -304,6 +314,38 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
       );
     }
     return await savePdfFile(await pdf.save());
+  }
+
+  void _drawArrowOnPdfCanvas(Canvas canvas, Rect rect, Paint paint) {
+    // Draw shaft
+    final p1 = Offset(rect.left, rect.bottom);
+    final p2 = Offset(rect.right, rect.top);
+    canvas.drawLine(p1, p2, paint);
+
+    // Draw arrowhead
+    final arrowHeadLength = 18.0;
+    final angle = (p2 - p1).direction;
+    final headAngle = 0.5; // radians, ~30 degrees
+
+    final arrowLeft = Offset(
+      p2.dx - arrowHeadLength * cos(angle - headAngle),
+      p2.dy - arrowHeadLength * sin(angle - headAngle),
+    );
+    final arrowRight = Offset(
+      p2.dx - arrowHeadLength * cos(angle + headAngle),
+      p2.dy - arrowHeadLength * sin(angle + headAngle),
+    );
+    canvas.drawLine(p2, arrowLeft, paint);
+    canvas.drawLine(p2, arrowRight, paint);
+  }
+
+  void _drawTriangleOnPdfCanvas(Canvas canvas, Rect rect, Paint paint) {
+    final path = Path();
+    path.moveTo(rect.center.dx, rect.top); // Top center
+    path.lineTo(rect.right, rect.bottom); // Bottom right
+    path.lineTo(rect.left, rect.bottom); // Bottom left
+    path.close();
+    canvas.drawPath(path, paint);
   }
 
   Future<String> savePdfFile(Uint8List pdfBytes) async {
@@ -338,7 +380,9 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
   }
 
   void updateShape(int index, Offset pos, Size size, Shape shape) {
-    final List<Shape> shapes = [...state.shapePerPage?[state.currentPage] ?? []];
+    final List<Shape> shapes = [
+      ...state.shapePerPage?[state.currentPage] ?? [],
+    ];
     if (index >= 0 && index < shapes.length) {
       shapes[index] = shape.copyWith(position: pos, size: size);
       final Map<int, List<Shape>> updatedMap = {
@@ -350,7 +394,9 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
   }
 
   void deleteShape(int index) {
-    final List<Shape> shapes = [...state.shapePerPage?[state.currentPage] ?? []];
+    final List<Shape> shapes = [
+      ...state.shapePerPage?[state.currentPage] ?? [],
+    ];
     if (index >= 0 && index < shapes.length) {
       shapes.removeAt(index);
       final Map<int, List<Shape>> updatedMap = {

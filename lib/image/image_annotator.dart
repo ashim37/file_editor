@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'package:file_editor/shape_type.dart';
 import 'package:file_editor/text_annotation/text_sticker.dart';
+import 'package:file_editor/utils/shape_type.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';

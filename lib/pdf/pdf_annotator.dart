@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 import 'package:pdfx/pdfx.dart' as pdfx;
 import 'package:file_editor/shape/draggable_resizable_shape.dart';
-import 'package:file_editor/shape_type.dart';
+import 'package:file_editor/utils/shape_type.dart';
 import 'package:file_editor/text_annotation/stroke_segment.dart';
 import 'package:file_editor/text_annotation/text_sticker.dart';
 import 'package:file_editor/pdf/pdf_annotator_riverpods.dart';
@@ -588,6 +588,18 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
       const PopupMenuItem(
         value: ShapeType.rectangle,
         child: Icon(Icons.rectangle_outlined),
+      ),
+      const PopupMenuItem(
+        value: ShapeType.line,
+        child: Icon(Icons.remove_rounded),
+      ),
+      const PopupMenuItem(
+        value: ShapeType.arrow,
+        child: Icon(Icons.arrow_right_alt_rounded, color: Colors.black),
+      ),
+      const PopupMenuItem(
+        value: ShapeType.triangle,
+        child: Icon(Icons.change_history_rounded),
       ),
     ];
   }
