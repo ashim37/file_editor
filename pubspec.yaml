@@ -68,6 +68,19 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  plugin:
+    platforms:
+      android:
+        package: com.example.file_editor
+        pluginClass: FileEditorPlugin
+      ios:
+        pluginClass: FileEditorPlugin
+      linux:
+        pluginClass: FileEditorPlugin
+      macos:
+        pluginClass: FileEditorPlugin
+      windows:
+        pluginClass: FileEditorPlugin
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/www/
