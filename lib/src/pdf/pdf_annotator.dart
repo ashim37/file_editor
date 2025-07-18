@@ -4,10 +4,10 @@ import 'package:file_editor/src/shape/draggable_resizable_shape.dart';
 import 'package:file_editor/src/text_annotation/stroke_segment.dart';
 import 'package:file_editor/src/text_annotation/text_sticker.dart';
 import 'package:file_editor/src/utils/shape_type.dart';
+import 'package:file_editor/src/utils/string_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfx/pdfx.dart' as pdfx;
-
 
 class PdfAnnotator extends ConsumerStatefulWidget {
   final String? filePath;
@@ -29,7 +29,19 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
   void initState() {
     super.initState();
     Future(() {
-      ref.read(pdfEditorProvider.notifier).loadPDF(widget.filePath ?? '');
+      if (mounted) {
+        if (widget.filePath?.isPdf() ?? false) {
+          ref.read(pdfEditorProvider.notifier).loadPDF(widget.filePath ?? '');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('File type is not supported: ${widget.filePath}'),
+              duration: const Duration(seconds: 5),
+            ),
+          );
+          Navigator.pop(context);
+        }
+      }
     });
   }
 
@@ -609,13 +621,31 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
       barrierDismissible: false,
       context: context,
       builder:
-          (_) => const AlertDialog(
-            content: Row(
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(width: 12),
-                Text('Saving PDF...'),
-              ],
+          (_) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            content: const SizedBox(
+              width: 260,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(
+                    backgroundColor: Colors.blueAccent,
+                    strokeWidth: 3,
+                  ),
+                  SizedBox(width: 18),
+                  Flexible(
+                    child: Text(
+                      'Saving PDF...',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
     );
@@ -642,20 +672,76 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
   }
 
   void showTextDialog() async {
-    final controller = TextEditingController();
     final result = await showDialog<String>(
       context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('Enter Text'),
-            content: TextField(controller: controller),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, controller.text),
-                child: const Text('Add'),
-              ),
-            ],
+      builder: (_) {
+        final controller = TextEditingController();
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
+          title: const Text(
+            'Enter Text',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          content: TextField(
+            controller: controller,
+            maxLines: 3,
+            keyboardType: TextInputType.multiline,
+            decoration: InputDecoration(
+              hintText: 'Type your text here...',
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(color: Colors.black87),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, controller.text),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Save',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
     if (result != null && result.trim().isNotEmpty) {
       ref.read(pdfEditorProvider.notifier).addTextAnnotation(result.trim());
@@ -701,17 +787,73 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
       builder: (_) {
         final controller = TextEditingController();
         return AlertDialog(
-          title: const Text('Add Comment'),
-          content: TextField(controller: controller),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Add Comment',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+          content: TextField(
+            controller: controller,
+            maxLines: 3,
+            keyboardType: TextInputType.multiline,
+            decoration: InputDecoration(
+              hintText: 'Type your comment here...',
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, controller.text),
-              child: const Text('Add'),
+            Row(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(color: Colors.black87),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, controller.text),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Save',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         );
       },
     );
+
     if (comment != null && comment.trim().isNotEmpty) {
       ref
           .read(pdfEditorProvider.notifier)
