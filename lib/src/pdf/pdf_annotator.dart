@@ -74,51 +74,44 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                       final penColor = ref.watch(
                         pdfEditorProvider.select((s) => s.penColor),
                       );
-                      return DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: Colors.grey[50],
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<Color>(
-                              value: penColor,
-                              icon: const Icon(Icons.arrow_drop_down, size: 22),
-                              onChanged: (color) {
-                                if (color != null) {
-                                  ref
-                                      .read(pdfEditorProvider.notifier)
-                                      .setPenColor(color);
-                                }
-                              },
-                              items:
-                                  [
-                                        Colors.red,
-                                        Colors.blue,
-                                        Colors.green,
-                                        Colors.black,
-                                        Colors.yellow,
-                                      ]
-                                      .map(
-                                        (color) => DropdownMenuItem(
-                                          value: color,
-                                          child: Container(
-                                            width: 22,
-                                            height: 22,
-                                            decoration: BoxDecoration(
-                                              color: color,
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: Colors.grey.shade400,
-                                              ),
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<Color>(
+                            value: penColor,
+                            icon: const Icon(Icons.arrow_drop_down, size: 22),
+                            onChanged: (color) {
+                              if (color != null) {
+                                ref
+                                    .read(pdfEditorProvider.notifier)
+                                    .setPenColor(color);
+                              }
+                            },
+                            items:
+                                [
+                                      Colors.red,
+                                      Colors.blue,
+                                      Colors.green,
+                                      Colors.black,
+                                      Colors.yellow,
+                                    ]
+                                    .map(
+                                      (color) => DropdownMenuItem(
+                                        value: color,
+                                        child: Container(
+                                          width: 22,
+                                          height: 22,
+                                          decoration: BoxDecoration(
+                                            color: color,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Colors.grey.shade400,
                                             ),
                                           ),
                                         ),
-                                      )
-                                      .toList(),
-                            ),
+                                      ),
+                                    )
+                                    .toList(),
                           ),
                         ),
                       );
@@ -168,7 +161,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                           }
                         },
                         icon: Icon(
-                          Icons.edit_note,
+                          Icons.edit_rounded,
                           color:
                               drawingEnabled ? Colors.blue : Colors.grey[800],
                         ),
@@ -495,7 +488,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                   // Floating page controls
                   Positioned(
                     bottom: 60,
-                    right: 50,
+                    left: MediaQuery.of(context).size.width * 0.07,
                     child: Card(
                       color: Colors.white.withValues(alpha: 0.98),
                       elevation: 4,
