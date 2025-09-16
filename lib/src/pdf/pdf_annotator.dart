@@ -630,7 +630,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                   SizedBox(width: 18),
                   Flexible(
                     child: Text(
-                      'Saving PDF...',
+                      'Saving changes',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
