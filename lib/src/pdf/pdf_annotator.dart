@@ -168,7 +168,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                           }
                         },
                         icon: Icon(
-                          Icons.edit,
+                          Icons.edit_note,
                           color:
                               drawingEnabled ? Colors.blue : Colors.grey[800],
                         ),
@@ -182,7 +182,7 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
                   message: 'Save Annotated PDF',
                   child: IconButton(
                     icon: const Icon(
-                      Icons.save_alt_rounded,
+                      Icons.save_sharp,
                       color: Colors.deepPurple,
                     ),
                     onPressed: savePdf,
@@ -660,14 +660,8 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
         .saveAnnotatedPdf(displaySize: displaySize);
 
     if (mounted) {
-      Navigator.pop(context, path);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('PDF saved to $path'),
-          duration: const Duration(seconds: 5),
-        ),
-      );
-      Navigator.pop(context);
+      Navigator.pop(context); // Close the loading dialog
+      Navigator.pop(context, path); // Return the path to the calling project
     }
   }
 
