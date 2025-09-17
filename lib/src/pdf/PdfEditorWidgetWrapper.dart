@@ -9,6 +9,12 @@ class PdfEditorWidgetWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ProviderScope(child: PdfAnnotator(pdfFile));
+    return Theme(
+      data: ThemeData.light().copyWith(
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: Colors.grey[100],
+      ),
+      child: ProviderScope(child: PdfAnnotator(pdfFile)),
+    );
   }
 }
