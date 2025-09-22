@@ -23,6 +23,7 @@ class PdfAnnotatorState {
   final bool addTagMode;
   final Size pdfPageSize;
   final bool drawingEnabled;
+  final String? originalFilePath;
   final TransformationController transformationController =
       TransformationController();
 
@@ -43,6 +44,7 @@ class PdfAnnotatorState {
     required this.addTagMode,
     this.pdfPageSize = const Size(0, 0),
     this.drawingEnabled = false,
+    this.originalFilePath,
   });
 
   PdfAnnotatorState copyWith({
@@ -63,6 +65,7 @@ class PdfAnnotatorState {
     Size? pdfPageSize,
     bool? drawingEnabled,
     StrokeSegment? currentStroke,
+    String? originalFilePath,
   }) {
     return PdfAnnotatorState(
       isLoading: isLoading ?? this.isLoading,
@@ -81,6 +84,7 @@ class PdfAnnotatorState {
       addTagMode: addTagMode ?? this.addTagMode,
       pdfPageSize: pdfPageSize ?? this.pdfPageSize,
       drawingEnabled: drawingEnabled ?? this.drawingEnabled,
+      originalFilePath: originalFilePath ?? this.originalFilePath,
     );
   }
 }

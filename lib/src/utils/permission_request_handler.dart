@@ -1,17 +1,9 @@
 import 'dart:io';
 
-import 'package:permission_handler/permission_handler.dart';
-
-Future<void> requestStoragePermission() async {
-  if (Platform.isAndroid) {
-    final isManageExternalStorageGranted =
-        await Permission.manageExternalStorage.isGranted;
-    final isStorageGranted = await Permission.storage.isGranted;
-    if (!isManageExternalStorageGranted) {
-      await Permission.manageExternalStorage.request(); // Android 11+
-    }
-    if (!isStorageGranted) {
-      await Permission.storage.request();
-    }
-  }
+Future<bool> requestStoragePermission() async {
+  // Since we're using app-specific storage directories that don't require permissions,
+  // we can always return true. These directories are:
+  // - getExternalStorageDirectory() on Android (app-specific, no permissions needed)
+  // - getApplicationDocumentsDirectory() on iOS (app sandbox, no permissions needed)
+  return true;
 }

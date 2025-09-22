@@ -34,6 +34,7 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
           shapePerPage: {},
           commentsPerPage: {},
           addTagMode: false,
+          originalFilePath: null,
         ),
       );
 
@@ -54,6 +55,7 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
       drawingsPerPage: {for (var i = 1; i <= pagesCount; i++) i: []},
       textPerPage: {for (var i = 1; i <= pagesCount; i++) i: []},
       currentPoints: [],
+      originalFilePath: filePath,
     );
 
     setPDFPageSize();
@@ -348,13 +350,32 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
   }
 
   Future<String> savePdfFile(Uint8List pdfBytes) async {
-    await requestStoragePermission();
-    final path = await getExportPath(
-      '${DateTime.now().millisecondsSinceEpoch}.pdf',
-    );
-    final file = File(path);
-    await file.writeAsBytes(pdfBytes);
-    return path;
+    final hasPermission = await requestStoragePermission();
+    if (!hasPermission) {
+      throw Exception('Storage permission denied');
+    }
+
+    String filename;
+    if (state.originalFilePath != null) {
+      final originalPath = state.originalFilePath!;
+      final lastSlashIndex = originalPath.lastIndexOf('/');
+      final originalFilename = lastSlashIndex >= 0
+          ? originalPath.substring(lastSlashIndex + 1)
+          : originalPath;
+      filename = originalFilename;
+    } else {
+      filename = '${DateTime.now().millisecondsSinceEpoch}.pdf';
+    }
+
+    final filePath = await getExportPath(filename);
+    final file = File(filePath);
+
+    try {
+      await file.writeAsBytes(pdfBytes);
+      return filePath;
+    } catch (e) {
+      throw Exception('Failed to save file: $e');
+    }
   }
 
   void addShape(ShapeType value) {
