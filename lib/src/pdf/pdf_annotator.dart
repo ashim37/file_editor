@@ -575,11 +575,10 @@ class _PdfAnnotatorState extends ConsumerState<PdfAnnotator> {
         value: ShapeType.text,
         child: Icon(Icons.text_fields_outlined),
       ),
-      PopupMenuItem(
+      const PopupMenuItem(
         value: ShapeType.drawing,
         child: Icon(
           Icons.draw_outlined,
-          color: drawingEnabled ? Colors.black : Colors.grey,
         ),
       ),
       const PopupMenuItem(

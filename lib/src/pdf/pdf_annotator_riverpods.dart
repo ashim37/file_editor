@@ -356,16 +356,7 @@ class PDFAnnotatorRiverPods extends StateNotifier<PdfAnnotatorState> {
     }
 
     String filename;
-    if (state.originalFilePath != null) {
-      final originalPath = state.originalFilePath!;
-      final lastSlashIndex = originalPath.lastIndexOf('/');
-      final originalFilename = lastSlashIndex >= 0
-          ? originalPath.substring(lastSlashIndex + 1)
-          : originalPath;
-      filename = originalFilename;
-    } else {
-      filename = '${DateTime.now().millisecondsSinceEpoch}.pdf';
-    }
+    filename = '${DateTime.now().millisecondsSinceEpoch}.pdf';
 
     final filePath = await getExportPath(filename);
     final file = File(filePath);
